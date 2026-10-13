@@ -1,4 +1,4 @@
-//! Find/replace engine (modes "Normal", "Erweitert" and "Regulärer Ausdruck" like Notepad++).
+//! Find/replace engine (search modes "Normal", "Extended" and "Regular expression" like Notepad++).
 
 use std::ops::Range;
 

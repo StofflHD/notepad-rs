@@ -1,50 +1,49 @@
 # NotepadRS 0.1 (Rust, egui)
 
-Text- und Quelltext-Editor im Stil von [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus)
-für Linux, als einzelnes AppImage.
+A text and source code editor in the style of [Notepad++](https://github.com/notepad-plus-plus/notepad-plus-plus)
+for Linux, shipped as a single AppImage.
 
-Notepad++ selbst ist eine reine Win32-Anwendung (C++, Win32-API, Scintilla) und lässt sich nicht
-direkt übertragen. NotepadRS ist eine **Neuimplementierung in Rust** mit Menüstruktur,
-Befehlen, Tastenkürzeln und Dateiformaten von Notepad++ – es wurde kein Code aus Notepad++ übernommen.
+Notepad++ itself is a pure Win32 application (C++, Win32 API, Scintilla) and cannot be ported
+directly. NotepadRS is a **reimplementation in Rust** that follows the menu structure, commands,
+shortcuts and file formats of Notepad++ – no code was taken from Notepad++.
 
-Oberfläche: **Englisch** (Standard) und Deutsch – umschaltbar unter
+User interface: **English** (default) and German – switchable under
 *Settings → Preferences → General → Localization*.
 
-## Funktionsumfang
+## Features
 
-Abgeglichen mit den 339 Menübefehlen von Notepad++ (`english.xml`). Alle Befehle stehen auch im
-*Shortcut Mapper* und lassen sich frei belegen.
+Checked against the 339 menu commands of Notepad++ (`english.xml`). Every command is also available
+in the *Shortcut Mapper* and can be bound freely.
 
-| Menü | Inhalt |
+| Menu | Contents |
 |---|---|
-| **File** | New/Open/Save/Save As/Save a Copy/Save All, Reload, Rename, Close (All/BUT Current/BUT Pinned/Left/Right/Unchanged), Move to Recycle Bin, Load/Save Session, Print (CUPS) / Print Now / in PostScript-Datei, Open Containing Folder (Dateimanager/Terminal), Open Folder as Workspace, Open in Default Viewer, Recent Files, Restore Recent Closed File |
-| **Edit** | Undo/Redo, Begin/End Select (auch Spaltenmodus), Datum/Uhrzeit (kurz/lang/eigenes Format), Copy Path/Name/Dir/All Names, Indent, alle Case-Varianten (inkl. Proper/Sentence *blend*, iNVERT, ranDOm), alle Line Operations (Duplicate, Delete, Split, Join, Move, Remove Duplicates/Empty, Insert Blank, 14 Sortierarten, Reverse, Randomize), Comment/Uncomment (Zeile/Block, je Sprache), Auto-Completion inkl. Funktionsparameter-Hinweisen, EOL Conversion, Blank Operations, Paste Special (HTML-/RTF-Inhalt), On Selection (Open File, Redact █/●, Search on Internet), Multi-select All/Next (4 Varianten), Column Mode, Column Editor, Character Panel, Clipboard History, Read-Only (Dokument/alle/Dateiattribut) |
-| **Search** | Find/Replace/Mark mit Normal/Erweitert/Regex, Find in Files (Filter inkl. `!*.bak` und `!+/ordner`, Unterordner, versteckte Ordner) und Replace in Files, Find All (aktuelles/alle Dokumente), Search Results Window (F7) mit F4/Umschalt+F4, Select and Find Next/Previous, Volatile Find, Incremental Search, Go to Line/Offset, Matching Brace, Select In-between, Change History, Style All/One Token mit 5 Stilen + Clear/Jump/Copy Styled Text, Bookmarks (alle Operationen inkl. Paste to/Inverse), Find Characters in Range |
-| **View** | Always on Top, Full Screen, Post-It, Distraction Free, Show Symbol (Leerzeichen/Tabs, Zeilenende, Steuerzeichen, nicht druckbare Zeichen, Einrückungshilfslinien, Umbruchsymbol), Zoom, Move/Clone to Other View (geteilte Ansicht), Move/Open in New Instance, Tab-Befehle (1–9, erster/letzter, verschieben, anheften, 5 Tab-Farben), horizontale, mehrzeilige oder vertikale Tab-Leiste, Word Wrap, Focus on Another View, Hide Lines, Fold/Unfold All/Current/Level 1–8, Summary, Project Panels 1–3, Folder as Workspace, Document Map, Document List, Function List, Synchronize Vertical/Horizontal Scrolling, Monitoring (tail -f) |
-| **Encoding** | ANSI, UTF-8, UTF-8-BOM, UTF-16 BE/LE BOM, ~35 Zeichensätze (Windows-125x, ISO-8859-x, KOI8, OEM 866, Shift-JIS, EUC-JP/KR, GBK, GB18030, Big5 …) – jeweils *interpretieren als* und *konvertieren nach*; gemischte Zeilenenden bleiben erhalten |
-| **Language** | ~220 Sprachen (syntect/bat), A–Z-Menü, Auto-Erkennung; **User Defined Languages** mit Editor (Schlüsselwortgruppen, Kommentare, Operatoren, Begrenzer, Faltung, Stile) – **kompatibel mit Notepad++-UDL-XML** (Import/Export, Ordner `~/.config/notepad-rs/userDefineLangs/`) |
-| **Settings** | Preferences (General, Editing, Margins/Border/Edge, New Document, Default Directory, Recent Files, Language/Tab-Einstellungen je Sprache, Highlighting, Print, Searching, Backup, Auto-Completion, Multi-Instance & Date, Delimiter, Performance, Cloud & Link, Search Engine, MISC., File Association, Context Menu), Style Configurator (Farbschema hell/dunkel, Schrift, alle UI-Farben), Shortcut Mapper (mit Konflikterkennung), Import von `.tmTheme`-Farbschemata und `.sublime-syntax`-Sprachen, Edit Popup ContextMenu |
-| **Tools** | MD5, SHA-1, SHA-256, SHA-512: aus Text, aus Dateien, aus Auswahl in die Zwischenablage |
-| **Macro** | Aufzeichnen/Abspielen, speichern mit Namen und Tastenkürzel, mehrfach oder bis Dateiende ausführen, verwalten |
-| **Run** | Run-Dialog mit Notepad++-Variablen (`$(FULL_CURRENT_PATH)`, `$(CURRENT_WORD)`, `$(SYS.HOME)` …), gespeicherte Befehle mit Tastenkürzel |
-| **Plugins** | Eingebaute Entsprechungen der verbreitetsten Plugins: **Compare** (Seite an Seite, synchron scrollend), **MIME Tools** (Base64, URL, Quoted-Printable), **NppExport** (Export als HTML/RTF, HTML/RTF in die Zwischenablage), **Converter** (ASCII↔HEX), **JSON Tools**, **XML Tools** (Pretty Print, Linearize, Syntax-Check) – plus **Skript-Plugins** (siehe unten) |
-| **Window / ?** | Windows-Dialog (sortieren, aktivieren, speichern, schließen), Sort By (Name, Pfad, Typ, Länge, Änderungszeit), Fensterliste, Kommandozeilenhilfe, Debug-Info, About |
+| **File** | New/Open/Save/Save As/Save a Copy/Save All, Reload, Rename, Close (All/BUT Current/BUT Pinned/Left/Right/Unchanged), Move to Recycle Bin, Load/Save Session, Print (CUPS) / Print Now / to PostScript file, Open Containing Folder (file manager/terminal), Open Folder as Workspace, Open in Default Viewer, Recent Files, Restore Recent Closed File |
+| **Edit** | Undo/Redo, Begin/End Select (also in column mode), date/time (short/long/custom format), Copy Path/Name/Dir/All Names, Indent, all case variants (incl. Proper/Sentence *blend*, iNVERT, ranDOm), all Line Operations (Duplicate, Delete, Split, Join, Move, Remove Duplicates/Empty, Insert Blank, 14 sort modes, Reverse, Randomize), Comment/Uncomment (line/block, per language), Auto-Completion incl. function parameter hints, EOL Conversion, Blank Operations, Paste Special (HTML/RTF content), On Selection (Open File, Redact █/●, Search on Internet), Multi-select All/Next (4 variants), Column Mode, Column Editor, Character Panel, Clipboard History, Read-Only (document/all/file attribute) |
+| **Search** | Find/Replace/Mark with Normal/Extended/Regex, Find in Files (filters incl. `!*.bak` and `!+/folder`, subfolders, hidden folders) and Replace in Files, Find All (current/all documents), Search Results Window (F7) with F4/Shift+F4, Select and Find Next/Previous, Volatile Find, Incremental Search, Go to Line/Offset, Matching Brace, Select In-between, Change History, Style All/One Token with 5 styles + Clear/Jump/Copy Styled Text, Bookmarks (all operations incl. Paste to/Inverse), Find Characters in Range |
+| **View** | Always on Top, Full Screen, Post-It, Distraction Free, Show Symbol (spaces/tabs, end of line, control characters, non-printing characters, indent guides, wrap symbol), Zoom, Move/Clone to Other View (split view), Move/Open in New Instance, tab commands (1–9, first/last, move, pin, 5 tab colours), horizontal, multi-line or vertical tab bar, Word Wrap, Focus on Another View, Hide Lines, Fold/Unfold All/Current/Level 1–8, Summary, Project Panels 1–3, Folder as Workspace, Document Map, Document List, Function List, Synchronize Vertical/Horizontal Scrolling, Monitoring (tail -f) |
+| **Encoding** | ANSI, UTF-8, UTF-8-BOM, UTF-16 BE/LE BOM, ~35 character sets (Windows-125x, ISO-8859-x, KOI8, OEM 866, Shift-JIS, EUC-JP/KR, GBK, GB18030, Big5 …) – each with *interpret as* and *convert to*; mixed line endings are preserved |
+| **Language** | ~220 languages (syntect/bat), A–Z menu, auto-detection; **User Defined Languages** with editor (keyword groups, comments, operators, delimiters, folding, styles) – **compatible with Notepad++ UDL XML** (import/export, folder `~/.config/notepad-rs/userDefineLangs/`) |
+| **Settings** | Preferences (General, Editing, Margins/Border/Edge, New Document, Default Directory, Recent Files, Language/tab settings per language, Highlighting, Print, Searching, Backup, Auto-Completion, Multi-Instance & Date, Delimiter, Performance, Cloud & Link, Search Engine, MISC., File Association, Context Menu), Style Configurator (light/dark colour scheme, font, all UI colours), Shortcut Mapper (with conflict detection), import of `.tmTheme` colour schemes and `.sublime-syntax` languages, Edit Popup ContextMenu |
+| **Tools** | MD5, SHA-1, SHA-256, SHA-512: from text, from files, from selection to clipboard |
+| **Macro** | Record/playback, save with name and shortcut, run multiple times or until end of file, manage |
+| **Run** | Run dialog with Notepad++ variables (`$(FULL_CURRENT_PATH)`, `$(CURRENT_WORD)`, `$(SYS.HOME)` …), saved commands with shortcuts |
+| **Plugins** | Built-in equivalents of the most popular plugins: **Compare** (side by side, synchronised scrolling), **MIME Tools** (Base64, URL, Quoted-Printable), **NppExport** (export to HTML/RTF, HTML/RTF to clipboard), **Converter** (ASCII↔HEX), **JSON Tools**, **XML Tools** (Pretty Print, Linearize, syntax check) – plus **script plugins** (see below) |
+| **Window / ?** | Windows dialog (sort, activate, save, close), Sort By (name, path, type, length, modified time), window list, command line help, debug info, About |
 
-Editor: eigenes, virtualisiertes Widget (nur sichtbare Zeilen werden gelayoutet/eingefärbt – flüssig
-auch bei Dateien > 50 MB / 1 Mio. Zeilen), Mehrfach-Cursor (Strg+Klick), Spaltenauswahl (Alt+Ziehen,
-Alt+Umschalt+Pfeile), Code-Faltung (Klammern, Einrückung, Tags, Markdown), Faltungs-, Lesezeichen-,
-Zeilennummern- und Änderungsverlauf-Rand, Randlinie, Smart Highlighting, passende Klammern/Tags,
-Autovervollständigung (Schlüsselwörter der Sprache, Wörter, Pfade), Funktionsparameter-Hinweise
-(Strg+Umschalt+Leertaste bzw. beim Tippen von `(`), automatisches Schließen von
-Klammern/Anführungszeichen/Tags, anklickbare Links, Text per Drag & Drop verschieben/kopieren,
-Überschreibmodus, Sitzungs-Snapshot inkl. ungespeicherter Änderungen, Sicherung beim Speichern,
-Erkennung extern geänderter Dateien, Einzelinstanz.
+Editor: custom virtualised widget (only visible lines are laid out and highlighted – smooth even
+with files > 50 MB / 1 million lines), multiple carets (Ctrl+click), column selection (Alt+drag,
+Alt+Shift+arrows), code folding (braces, indentation, tags, Markdown), fold, bookmark, line number
+and change history margins, edge line, smart highlighting, matching braces/tags, auto-completion
+(language keywords, words, paths), function parameter hints (Ctrl+Shift+Space or when typing `(`),
+auto-closing of brackets/quotes/tags, clickable links, drag & drop of text (move/copy), overwrite
+mode, session snapshot incl. unsaved changes, backup on save, detection of externally modified
+files, single instance.
 
-### Skript-Plugins
+### Script plugins
 
-Ausführbare Dateien in `~/.config/notepad-rs/plugins/` erscheinen unter *Plugins → Scripts*.
-Sie erhalten die Auswahl (oder ohne Auswahl das ganze Dokument) auf stdin; eine Ausgabe auf stdout
-ersetzt sie. Umgebungsvariablen: `NRS_FILE`, `NRS_LANGUAGE`, `NRS_SELECTION`, `NRS_LINE`.
+Executable files in `~/.config/notepad-rs/plugins/` appear under *Plugins → Scripts*.
+They receive the selection (or the whole document if nothing is selected) on stdin; output on stdout
+replaces it. Environment variables: `NRS_FILE`, `NRS_LANGUAGE`, `NRS_SELECTION`, `NRS_LINE`.
 
 ```bash
 #!/bin/sh
@@ -52,60 +51,63 @@ ersetzt sie. Umgebungsvariablen: `NRS_FILE`, `NRS_LANGUAGE`, `NRS_SELECTION`, `N
 sort -u
 ```
 
-### Funktionsparameter-Hinweise
+### Function parameter hints
 
-Signaturen stammen aus den Funktionsdefinitionen im Dokument (`fn`, `def`, `function`, C-artige
-Deklarationen) und aus **Notepad++-API-Dateien**: Dateien wie `cpp.xml` oder `php.xml` aus dem Ordner
-`autoCompletion` von Notepad++ einfach nach `~/.config/notepad-rs/autoCompletion/` kopieren. Sie
-liefern dann Parameter-Hinweise mit Überladungen und Beschreibung und erweitern die
-Funktionsvervollständigung.
+Signatures come from function definitions in the document (`fn`, `def`, `function`, C-style
+declarations) and from **Notepad++ API files**: copy files such as `cpp.xml` or `php.xml` from the
+`autoCompletion` folder of Notepad++ to `~/.config/notepad-rs/autoCompletion/`. They then provide
+parameter hints with overloads and descriptions and extend function completion.
 
-RTF in der Zwischenablage (Kopieren/Einfügen) benötigt `wl-clipboard` (Wayland) oder `xclip` (X11);
-HTML funktioniert ohne Zusatzprogramme.
+RTF on the clipboard (copy/paste) requires `wl-clipboard` (Wayland) or `xclip` (X11); HTML works
+without additional tools.
 
-### Kommandozeile
+### Command line
 
 ```
-notepad-rs [-multiInst] [-nosession] [-ro] [-n<Zeile>] [-c<Spalte>] [-l<Sprache>] [-udl="<Name>"]
-           [-alwaysOnTop] [-notabbar] [-monitor] [-openSession <Datei>] [-r] [Datei …]
+notepad-rs [-multiInst] [-nosession] [-ro] [-n<line>] [-c<column>] [-l<language>] [-udl="<name>"]
+           [-alwaysOnTop] [-notabbar] [-monitor] [-openSession <file>] [-r] [file …]
 ```
 
-## Nicht umsetzbar / abweichend
+## Not implemented / different
 
-- **Native Notepad++-Plugins** (Windows-DLLs) und *Plugins Admin* – stattdessen eingebaute
-  Entsprechungen und Skript-Plugins.
-- Rechts-nach-links-Textrichtung (egui beherrscht keine bidirektionale Textdarstellung).
-- Windows-spezifische Einträge: Updater und Minimieren in den Tray. Die Dateizuordnung läuft
-  stattdessen über Desktop-Eintrag und `mimeapps.list`.
+- **Native Notepad++ plugins** (Windows DLLs) and *Plugins Admin* – built-in equivalents and script
+  plugins instead.
+- Right-to-left text direction (egui does not support bidirectional text rendering).
+- Windows-specific items: updater and minimize to tray. File association uses a desktop entry and
+  `mimeapps.list` instead.
 
-## Bauen
+## Building
 
 ```bash
-cargo test                          # 56 Tests: Kern, Editor-Widget, App-Abläufe (headless), Übersetzung
-cargo run --release -- datei.txt    # direkt starten
+cargo test                          # 56 tests: core, editor widget, app flows (headless), translation
+cargo run --release -- file.txt     # run directly
 packaging/build-appimage.sh         # -> dist/NotepadRS-<version>-x86_64.AppImage
 ```
 
-Das Skript lädt `appimagetool` bei Bedarf herunter (oder `APPIMAGETOOL=/pfad/zum/tool`).
-Das Binary hängt nur von der glibc des Build-Systems ab (hier 2.39 → Debian 13, Ubuntu 24.04 und
-neuer). Dateidialoge laufen über das XDG-Desktop-Portal (Fallback: `zenity`), Drucken über CUPS (`lp`).
+The script downloads `appimagetool` when needed (or use `APPIMAGETOOL=/path/to/tool`).
+The binary only depends on the glibc of the build system (here 2.39 → Debian 13, Ubuntu 24.04 and
+newer). File dialogs use the XDG desktop portal (fallback: `zenity`), printing uses CUPS (`lp`).
 
-Einstellungen, Sitzung, UDLs, Themes und Plugins liegen in `~/.config/notepad-rs/`.
+Settings, session, UDLs, themes and plugins are stored in `~/.config/notepad-rs/`.
 
-## Aufbau
+## Structure
 
-| Datei | Inhalt |
+| File | Contents |
 |---|---|
-| `src/doc.rs` | Dokument: Text + Zeilenindex, Kodierung, Zeilenenden (auch gemischt), Undo/Redo, Mehrfachauswahl, Faltung/ausgeblendete Zeilen, Änderungsverlauf |
-| `src/editor.rs` | Editor-Widget: Eingabe, Cursor, Spaltenauswahl, Scrollen, Ränder, Zeichnen, Autovervollständigung |
-| `src/highlight.rs`, `src/fold.rs`, `src/udl.rs` | Syntax-Highlighting, Faltstruktur, benutzerdefinierte Sprachen |
-| `src/search.rs`, `src/findfiles.rs` | Suchen/Ersetzen, Suche in Dateien |
-| `src/textops.rs`, `src/tools.rs` | Text-/Zeilenoperationen; Hashes, MIME/JSON/XML, Compare, HTML/RTF-Export, Druck, Papierkorb, Run, Skript-Plugins |
-| `src/api.rs`, `src/assoc.rs` | Funktionsparameter-Hinweise (Notepad++-API-XML), Dateizuordnung |
-| `src/cmd.rs`, `src/commands.rs` | Befehlsregister (IDs, Labels, Tastenkürzel) und Befehlsausführung |
-| `src/app.rs`, `src/ui_*.rs` | Fenster, zwei Ansichten, Sitzung; Menüs, Dialoge, Einstellungen, Panels |
-| `src/i18n*.rs` | Übersetzung (Englisch → Deutsch) |
-| `src/project.rs`, `src/settings.rs`, `src/ipc.rs`, `src/fonts.rs` | Projekt-Panels (Notepad++-Workspace-XML), Einstellungen, Einzelinstanz, Schriften |
+| `src/doc.rs` | Document: text + line index, encoding, line endings (also mixed), undo/redo, multi-selection, folding/hidden lines, change history |
+| `src/editor.rs` | Editor widget: input, caret, column selection, scrolling, margins, painting, auto-completion, parameter hints |
+| `src/highlight.rs`, `src/fold.rs`, `src/udl.rs` | Syntax highlighting, fold structure, user defined languages |
+| `src/search.rs`, `src/findfiles.rs` | Find/replace, find in files |
+| `src/textops.rs`, `src/tools.rs` | Text/line operations; hashes, MIME/JSON/XML, compare, HTML/RTF export, printing, recycle bin, run, script plugins |
+| `src/api.rs`, `src/assoc.rs` | Function parameter hints (Notepad++ API XML), file association |
+| `src/cmd.rs`, `src/commands.rs` | Command registry (IDs, labels, shortcuts) and command execution |
+| `src/app.rs`, `src/ui_*.rs` | Window, two views, session; menus, dialogs, preferences, panels |
+| `src/i18n*.rs` | Translation (English → German) |
+| `src/project.rs`, `src/settings.rs`, `src/ipc.rs`, `src/fonts.rs` | Project panels (Notepad++ workspace XML), settings, single instance, fonts |
+
+## License
+
+GPL-3.0-or-later, see [LICENSE](LICENSE).
 
 ---
 
