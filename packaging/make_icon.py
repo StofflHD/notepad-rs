@@ -60,14 +60,14 @@ def draw(cr, S):
     k = S / 256.0
     cr.scale(k, k)
 
-    # Background: squircle with a green gradient
+    # Background: squircle with a rust gradient (accent colour of the UI theme)
     squircle(cr, 8, 8, 240)
     g = cairo.LinearGradient(0, 8, 0, 248)
-    g.add_color_stop_rgba(0, *hexc("#5cc46a"))
-    g.add_color_stop_rgba(1, *hexc("#23803a"))
+    g.add_color_stop_rgba(0, *hexc("#f0773a"))
+    g.add_color_stop_rgba(1, *hexc("#a8380f"))
     cr.set_source(g)
     cr.fill_preserve()
-    cr.set_source_rgba(*hexc("#1a5c2a", 0.6))
+    cr.set_source_rgba(*hexc("#6b240a", 0.8))
     cr.set_line_width(2)
     cr.stroke()
 
@@ -90,41 +90,42 @@ def draw(cr, S):
     px, py, pw, ph = -66, -86, 132, 172
     # shadow
     rounded_rect(cr, px + 5, py + 8, pw, ph, 12)
-    cr.set_source_rgba(0, 0, 0, 0.22)
+    cr.set_source_rgba(0, 0, 0, 0.28)
     cr.fill()
     # page
     rounded_rect(cr, px, py, pw, ph, 12)
-    cr.set_source_rgba(*hexc("#fdfdfb"))
+    cr.set_source_rgba(*hexc("#fbf9f6"))
     cr.fill()
     # binding strip
     cr.save()
     rounded_rect(cr, px, py, pw, ph, 12)
     cr.clip()
     cr.rectangle(px, py, pw, 26)
-    cr.set_source_rgba(*hexc("#37474f"))
+    cr.set_source_rgba(*hexc("#2c2825"))
     cr.fill()
     cr.restore()
     # spiral rings
     for i in range(6):
         x = px + 16 + i * 20
-        cr.set_source_rgba(*hexc("#1f2a30"))
+        cr.set_source_rgba(*hexc("#1b1917"))
         cr.arc(x, py + 15, 4.2, 0, 2 * math.pi)
         cr.fill()
         cr.set_line_width(4)
         cr.set_line_cap(cairo.LINE_CAP_ROUND)
-        cr.set_source_rgba(*hexc("#cfd8dc"))
+        cr.set_source_rgba(*hexc("#e9e2da"))
         cr.move_to(x, py + 15)
         cr.line_to(x, py - 6)
         cr.stroke()
-    # code lines (syntax colours): (indent, [(length, colour)])
+    # code lines in warm syntax colours: (indent, [(length, colour)])
+    kw, fn, st, tx, nu, cm = "#b8411b", "#8a5a3c", "#e0912f", "#6b625a", "#9a7b2f", "#b9b0a6"
     lines = [
-        (0, [(26, "#8e44ad"), (46, "#1e6fd9")]),
-        (14, [(20, "#8e44ad"), (30, "#e67e22"), (14, "#455a64")]),
-        (28, [(36, "#1e6fd9"), (24, "#e67e22")]),
-        (28, [(22, "#2e9e4f"), (34, "#455a64")]),
-        (14, [(12, "#455a64")]),
-        (0, [(58, "#9aa5ab")]),
-        (0, [(30, "#8e44ad"), (40, "#1e6fd9")]),
+        (0, [(26, kw), (46, fn)]),
+        (14, [(20, kw), (30, st), (14, tx)]),
+        (28, [(36, fn), (24, st)]),
+        (28, [(22, nu), (34, tx)]),
+        (14, [(12, tx)]),
+        (0, [(58, cm)]),
+        (0, [(30, kw), (40, fn)]),
     ]
     cr.set_line_cap(cairo.LINE_CAP_ROUND)
     cr.set_line_width(7)
@@ -140,23 +141,23 @@ def draw(cr, S):
         y += 17
     cr.restore()
 
-    # Rust-coloured gear badge with "RS"
+    # Dark gear badge with "RS"
     cx, cy = 188, 190
     cr.save()
     gear(cr, cx + 2, cy + 4, 46, 37, 10)
-    cr.set_source_rgba(0, 0, 0, 0.25)
+    cr.set_source_rgba(0, 0, 0, 0.3)
     cr.fill()
     gear(cr, cx, cy, 46, 37, 10)
     gg = cairo.LinearGradient(0, cy - 46, 0, cy + 46)
-    gg.add_color_stop_rgba(0, *hexc("#f0773a"))
-    gg.add_color_stop_rgba(1, *hexc("#b8411b"))
+    gg.add_color_stop_rgba(0, *hexc("#3d3631"))
+    gg.add_color_stop_rgba(1, *hexc("#1b1917"))
     cr.set_source(gg)
     cr.fill_preserve()
-    cr.set_source_rgba(*hexc("#8a2e10"))
+    cr.set_source_rgba(*hexc("#000000"))
     cr.set_line_width(2)
     cr.stroke()
     cr.arc(cx, cy, 30, 0, 2 * math.pi)
-    cr.set_source_rgba(*hexc("#fff4ec"))
+    cr.set_source_rgba(*hexc("#fbf9f6"))
     cr.fill()
     # "RS" centred in the gear (glyphs become paths in the SVG)
     cr.set_source_rgba(*hexc("#b8411b"))
