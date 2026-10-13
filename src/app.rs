@@ -196,6 +196,11 @@ pub struct App {
 
     pub close_queue: VecDeque<(u64, usize)>,
     pub exit_after: bool,
+    /// Updater: running check/download and its dialog.
+    pub update_rx: Option<Receiver<crate::update::Msg>>,
+    pub update: Option<crate::ui_dialogs::UpdateDlg>,
+    /// Program to start after the window has closed (restart after an update).
+    pub restart_exe: Option<PathBuf>,
     pub allow_close: bool,
     pub close_after_save: Option<u64>,
     pub closed_paths: Vec<String>,
@@ -282,6 +287,9 @@ impl App {
             begin_select: None,
             close_queue: VecDeque::new(),
             exit_after: false,
+            update_rx: None,
+            update: None,
+            restart_exe: None,
             allow_close: false,
             close_after_save: None,
             closed_paths: Vec::new(),
@@ -373,6 +381,7 @@ impl App {
                     "split" => app.run(ctx, Cmd::CloneToOtherView),
                     "column" => app.dlg.column_editor = Some(Default::default()),
                     "about" => app.dlg.about = true,
+                    "update" => app.start_update_check(ctx, true),
                     _ => {}
                 }
             }
@@ -386,7 +395,54 @@ impl App {
             });
             app.ipc_rx = Some(rx);
         }
+        // Automatic update check (at most once a day, in the background).
+        let now = chrono::Utc::now().timestamp();
+        if !cfg!(test) && app.s.update_auto_check && std::env::var_os("NRS_NO_UPDATE").is_none() && now - app.s.update_last_check >= 86_400 {
+            app.s.update_last_check = now;
+            app.start_update_check(ctx, false);
+        }
         app
+    }
+
+    pub fn start_update_check(&mut self, ctx: &egui::Context, manual: bool) {
+        if self.update_rx.is_some() {
+            if manual {
+                self.update.get_or_insert(crate::ui_dialogs::UpdateDlg { state: crate::ui_dialogs::UpdateState::Checking, manual });
+            }
+            return;
+        }
+        let (tx, rx) = channel();
+        let ctx2 = ctx.clone();
+        crate::update::spawn_check(self.s.update_proxy.clone(), tx, move || ctx2.request_repaint());
+        self.update_rx = Some(rx);
+        if manual {
+            self.update = Some(crate::ui_dialogs::UpdateDlg { state: crate::ui_dialogs::UpdateState::Checking, manual });
+        }
+    }
+
+    pub fn start_update_install(&mut self, ctx: &egui::Context, rel: crate::update::Release) {
+        let Some(target) = crate::update::running_appimage() else { return };
+        let (tx, rx) = channel();
+        let ctx2 = ctx.clone();
+        crate::update::spawn_install(rel, target, self.s.update_proxy.clone(), tx, move || ctx2.request_repaint());
+        self.update_rx = Some(rx);
+        self.update = Some(crate::ui_dialogs::UpdateDlg { state: crate::ui_dialogs::UpdateState::Installing, manual: true });
+    }
+
+    fn poll_update(&mut self) {
+        use crate::ui_dialogs::{UpdateDlg, UpdateState};
+        let Some(rx) = &self.update_rx else { return };
+        let Ok(msg) = rx.try_recv() else { return };
+        self.update_rx = None;
+        let manual = self.update.as_ref().is_some_and(|u| u.manual);
+        let state = match msg {
+            crate::update::Msg::Checked(Ok(Some(rel))) if manual || rel.version != self.s.update_skip => Some(UpdateState::Available(rel)),
+            crate::update::Msg::Checked(Ok(_)) => manual.then_some(UpdateState::UpToDate),
+            crate::update::Msg::Checked(Err(e)) => manual.then_some(UpdateState::Error(e)),
+            crate::update::Msg::Installed(Ok(p)) => Some(UpdateState::Installed(p)),
+            crate::update::Msg::Installed(Err(e)) => Some(UpdateState::Error(e)),
+        };
+        self.update = state.map(|state| UpdateDlg { state, manual });
     }
 
     // ---- documents & views ---------------------------------------------------------------------
@@ -1274,6 +1330,7 @@ impl App {
             self.open_path(&f);
         }
         self.poll_find_in_files();
+        self.poll_update();
         self.update_function_list(ctx);
 
         // Close request (window manager, Alt+F4, File → Exit)
@@ -1282,6 +1339,9 @@ impl App {
                 self.persist(true);
                 if self.owns_socket {
                     ipc::cleanup();
+                }
+                if let Some(exe) = self.restart_exe.take() {
+                    crate::update::restart_when_exited(&exe);
                 }
             } else {
                 ctx.send_viewport_cmd(ViewportCommand::CancelClose);

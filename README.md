@@ -28,7 +28,7 @@ in the *Shortcut Mapper* and can be bound freely.
 | **Macro** | Record/playback, save with name and shortcut, run multiple times or until end of file, manage |
 | **Run** | Run dialog with Notepad++ variables (`$(FULL_CURRENT_PATH)`, `$(CURRENT_WORD)`, `$(SYS.HOME)` …), saved commands with shortcuts |
 | **Plugins** | Built-in equivalents of the most popular plugins: **Compare** (side by side, synchronised scrolling), **MIME Tools** (Base64, URL, Quoted-Printable), **NppExport** (export to HTML/RTF, HTML/RTF to clipboard), **Converter** (ASCII↔HEX), **JSON Tools**, **XML Tools** (Pretty Print, Linearize, syntax check) – plus **script plugins** (see below) |
-| **Window / ?** | Windows dialog (sort, activate, save, close), Sort By (name, path, type, length, modified time), window list, command line help, debug info, About |
+| **Window / ?** | Windows dialog (sort, activate, save, close), Sort By (name, path, type, length, modified time), window list, command line help, Update NotepadRS, Set Updater Proxy, debug info, About |
 
 Editor: custom virtualised widget (only visible lines are laid out and highlighted – smooth even
 with files > 50 MB / 1 million lines), multiple carets (Ctrl+click), column selection (Alt+drag,
@@ -61,6 +61,15 @@ parameter hints with overloads and descriptions and extend function completion.
 RTF on the clipboard (copy/paste) requires `wl-clipboard` (Wayland) or `xclip` (X11); HTML works
 without additional tools.
 
+### Updater
+
+*? → Update NotepadRS* checks the [GitHub releases](https://github.com/StofflHD/notepad-rs/releases)
+for a newer version; with *Settings → Preferences → MISC.* this also happens automatically at
+startup (at most once a day). When NotepadRS runs as an AppImage, *Update now* downloads the new
+AppImage, verifies its SHA-256 checksum (`.sha256` asset of the release) and replaces the AppImage
+file in place; *Restart now* starts the new version. Downloads use `curl` (or `wget`), optionally
+through the proxy from *? → Set Updater Proxy*. Before 1.0, pre-releases are offered as updates.
+
 ### Command line
 
 ```
@@ -73,13 +82,13 @@ notepad-rs [-multiInst] [-nosession] [-ro] [-n<line>] [-c<column>] [-l<language>
 - **Native Notepad++ plugins** (Windows DLLs) and *Plugins Admin* – built-in equivalents and script
   plugins instead.
 - Right-to-left text direction (egui does not support bidirectional text rendering).
-- Windows-specific items: updater and minimize to tray. File association uses a desktop entry and
-  `mimeapps.list` instead.
+- Minimize to tray. File association uses a desktop entry and `mimeapps.list` instead of the
+  Windows registry.
 
 ## Building
 
 ```bash
-cargo test                          # 56 tests: core, editor widget, app flows (headless), translation
+cargo test                          # 59 tests: core, editor widget, app flows (headless), translation, updater
 cargo run --release -- file.txt     # run directly
 packaging/build-appimage.sh         # -> dist/NotepadRS-<version>-x86_64.AppImage
 ```
@@ -99,7 +108,7 @@ Settings, session, UDLs, themes and plugins are stored in `~/.config/notepad-rs/
 | `src/highlight.rs`, `src/fold.rs`, `src/udl.rs` | Syntax highlighting, fold structure, user defined languages |
 | `src/search.rs`, `src/findfiles.rs` | Find/replace, find in files |
 | `src/textops.rs`, `src/tools.rs` | Text/line operations; hashes, MIME/JSON/XML, compare, HTML/RTF export, printing, recycle bin, run, script plugins |
-| `src/api.rs`, `src/assoc.rs` | Function parameter hints (Notepad++ API XML), file association |
+| `src/api.rs`, `src/assoc.rs`, `src/update.rs` | Function parameter hints (Notepad++ API XML), file association, updater |
 | `src/cmd.rs`, `src/commands.rs` | Command registry (IDs, labels, shortcuts) and command execution |
 | `src/app.rs`, `src/ui_*.rs` | Window, two views, session; menus, dialogs, preferences, panels |
 | `src/i18n*.rs` | Translation (English → German) |

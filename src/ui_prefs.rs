@@ -527,6 +527,21 @@ impl App {
                 ui.checkbox(&mut s.file_autodetect, tr("Enable"));
                 ui.checkbox(&mut s.auto_reload, tr("Update silently"));
                 ui.checkbox(&mut s.autodetect_scroll_end, tr("Scroll to the last line after update"));
+                ui.add_space(6.0);
+                ui.label(RichText::new(tr("Updater")).strong());
+                ui.checkbox(&mut s.update_auto_check, tr("Check for updates at startup (once a day)"));
+                ui.horizontal(|ui| {
+                    ui.label(tr("Proxy:"));
+                    ui.add(egui::TextEdit::singleline(&mut s.update_proxy).hint_text("http://proxy.example:3128"));
+                });
+                if !s.update_skip.is_empty() {
+                    ui.horizontal(|ui| {
+                        ui.label(trf("Skipped version: {}", &[&s.update_skip]));
+                        if ui.small_button(tr("Reset")).clicked() {
+                            s.update_skip.clear();
+                        }
+                    });
+                }
             }
             PrefPage::ContextMenu => {
                 ui.heading(tr("Edit Popup ContextMenu"));

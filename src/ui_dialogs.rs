@@ -107,6 +107,23 @@ pub struct Dialogs {
     pub cmdline: bool,
     pub debug: bool,
     pub tree_edit: Option<crate::ui_panels::TreeEdit>,
+    /// "Set Updater Proxy" dialog (edited value).
+    pub update_proxy: Option<String>,
+}
+
+pub enum UpdateState {
+    Checking,
+    UpToDate,
+    Available(crate::update::Release),
+    Installing,
+    Installed(std::path::PathBuf),
+    Error(String),
+}
+
+pub struct UpdateDlg {
+    pub state: UpdateState,
+    /// Opened from the menu (an automatic check only shows a found update).
+    pub manual: bool,
 }
 
 impl Dialogs {
@@ -121,6 +138,7 @@ impl Dialogs {
             || self.macro_multi.is_some()
             || self.char_range.is_some()
             || self.tree_edit.is_some()
+            || self.update_proxy.is_some()
     }
 }
 
@@ -1110,6 +1128,8 @@ impl App {
             }
         }
 
+        self.update_ui(ctx);
+
         // About / command line / debug
         if self.dlg.about {
             let mut open = true;
@@ -1145,6 +1165,142 @@ impl App {
                 }
             });
             self.dlg.debug = open && !esc_pressed(ctx);
+        }
+    }
+
+    fn update_ui(&mut self, ctx: &egui::Context) {
+        if let Some(mut proxy) = self.dlg.update_proxy.take() {
+            let mut open = true;
+            let mut done = false;
+            egui::Window::new(tr("Set Updater Proxy")).open(&mut open).collapsible(false).resizable(false).show(ctx, |ui| {
+                ui.label(tr("Proxy for update checks and downloads (empty = none):"));
+                let r = ui.add(egui::TextEdit::singleline(&mut proxy).hint_text("http://proxy.example:3128").desired_width(320.0));
+                ui.horizontal(|ui| {
+                    if ui.button(tr("OK")).clicked() || (r.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter))) {
+                        self.s.update_proxy = proxy.trim().to_string();
+                        done = true;
+                    }
+                    if ui.button(tr("Cancel")).clicked() {
+                        done = true;
+                    }
+                });
+            });
+            if open && !done && !esc_pressed(ctx) {
+                self.dlg.update_proxy = Some(proxy);
+            }
+        }
+        let Some(dlg) = self.update.take() else { return };
+        let mut open = true;
+        let mut keep = true;
+        let mut action: Option<u8> = None; // 1 install, 2 release page, 3 skip, 4 restart
+        let current = env!("CARGO_PKG_VERSION");
+        egui::Window::new(trf("Update {}", &[&APP_NAME])).open(&mut open).collapsible(false).resizable(false).anchor(Align2::CENTER_CENTER, vec2(0.0, 0.0)).show(ctx, |ui| {
+            ui.set_min_width(380.0);
+            match &dlg.state {
+                UpdateState::Checking => {
+                    ui.horizontal(|ui| {
+                        ui.spinner();
+                        ui.label(tr("Checking for updates…"));
+                    });
+                }
+                UpdateState::Installing => {
+                    ui.horizontal(|ui| {
+                        ui.spinner();
+                        ui.label(tr("Downloading and verifying the update…"));
+                    });
+                }
+                UpdateState::UpToDate => {
+                    ui.label(trf("{} {} is up to date.", &[&APP_NAME, &current]));
+                    if ui.button(tr("OK")).clicked() {
+                        keep = false;
+                    }
+                }
+                UpdateState::Available(rel) => {
+                    ui.label(RichText::new(trf("{} {} is available (installed: {}).", &[&APP_NAME, &rel.version, &current])).strong());
+                    if !rel.notes.trim().is_empty() {
+                        egui::ScrollArea::vertical().max_height(220.0).show(ui, |ui| {
+                            ui.label(rel.notes.trim());
+                        });
+                    }
+                    let appimage = crate::update::running_appimage();
+                    if appimage.is_none() {
+                        ui.label(RichText::new(tr("Not started from an AppImage: download the new version from the release page.")).weak());
+                    } else if rel.appimage.is_none() {
+                        ui.label(RichText::new(tr("The release has no AppImage for this system.")).weak());
+                    }
+                    ui.horizontal(|ui| {
+                        if appimage.is_some() && rel.appimage.is_some() && ui.button(tr("Update now")).clicked() {
+                            action = Some(1);
+                        }
+                        if ui.button(tr("Open release page")).clicked() {
+                            action = Some(2);
+                        }
+                        if ui.button(tr("Later")).clicked() {
+                            keep = false;
+                        }
+                        if ui.button(tr("Skip this version")).clicked() {
+                            action = Some(3);
+                        }
+                    });
+                }
+                UpdateState::Installed(p) => {
+                    ui.label(tr("The update has been installed. It takes effect after a restart."));
+                    ui.label(RichText::new(p.display().to_string()).weak());
+                    ui.horizontal(|ui| {
+                        if ui.button(tr("Restart now")).clicked() {
+                            action = Some(4);
+                        }
+                        if ui.button(tr("Later")).clicked() {
+                            keep = false;
+                        }
+                    });
+                }
+                UpdateState::Error(e) => {
+                    ui.label(RichText::new(tr("The update failed:")).strong());
+                    ui.label(e);
+                    ui.horizontal(|ui| {
+                        if ui.button(tr("Open release page")).clicked() {
+                            action = Some(2);
+                        }
+                        if ui.button(tr("OK")).clicked() {
+                            keep = false;
+                        }
+                    });
+                }
+            }
+        });
+        let busy = matches!(dlg.state, UpdateState::Checking | UpdateState::Installing);
+        if !busy && esc_pressed(ctx) {
+            keep = false;
+        }
+        match (action, &dlg.state) {
+            (Some(1), UpdateState::Available(rel)) => {
+                let rel = rel.clone();
+                self.start_update_install(ctx, rel);
+                return;
+            }
+            (Some(2), UpdateState::Available(rel)) => {
+                let _ = tools::open_with_default(&rel.page);
+                keep = false;
+            }
+            (Some(2), _) => {
+                let _ = tools::open_with_default(&crate::update::releases_page());
+                keep = false;
+            }
+            (Some(3), UpdateState::Available(rel)) => {
+                self.s.update_skip = rel.version.clone();
+                keep = false;
+            }
+            (Some(4), UpdateState::Installed(p)) => {
+                self.restart_exe = Some(p.clone());
+                ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                keep = false;
+            }
+            _ => {}
+        }
+        // A running check/download continues in the background when the window is closed.
+        if open && keep {
+            self.update = Some(dlg);
         }
     }
 

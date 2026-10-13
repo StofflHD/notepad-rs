@@ -648,6 +648,10 @@ impl App {
 
             ui.menu_button("?", |ui| {
                 self.mi(ui, cmds, Cmd::CommandLineHelp);
+                ui.separator();
+                self.mi(ui, cmds, Cmd::CheckUpdate);
+                self.mi(ui, cmds, Cmd::UpdaterProxy);
+                ui.separator();
                 for (l, u) in [
                     ("Notepad++ Online User Manual", "https://npp-user-manual.org/"),
                     ("Notepad++ Home", "https://notepad-plus-plus.org/"),

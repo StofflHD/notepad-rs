@@ -1060,6 +1060,8 @@ impl App {
             // ---- Help ------------------------------------------------------------------------
             Cmd::About => self.dlg.about = true,
             Cmd::CommandLineHelp => self.dlg.cmdline = true,
+            Cmd::CheckUpdate => self.start_update_check(ctx, true),
+            Cmd::UpdaterProxy => self.dlg.update_proxy = Some(self.s.update_proxy.clone()),
             Cmd::DebugInfo => self.dlg.debug = true,
             Cmd::OpenUrl(u) => {
                 let u = if u.starts_with("www.") { format!("https://{u}") } else { u };

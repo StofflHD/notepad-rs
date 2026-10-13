@@ -217,6 +217,14 @@ pub struct Settings {
     pub backup_dir: String,
     pub single_instance: bool,
     pub file_autodetect: bool,
+    /// Updater: check GitHub for a new version at startup (at most once a day).
+    pub update_auto_check: bool,
+    /// Proxy for the updater, e.g. `http://proxy:3128` (empty = none).
+    pub update_proxy: String,
+    /// Unix time of the last automatic check.
+    pub update_last_check: i64,
+    /// Version the user chose to skip.
+    pub update_skip: String,
     /// Reload files changed by other programs without asking (if unmodified).
     pub auto_reload: bool,
     pub autodetect_scroll_end: bool,
@@ -342,6 +350,10 @@ impl Default for Settings {
             backup_dir: String::new(),
             single_instance: true,
             file_autodetect: true,
+            update_auto_check: true,
+            update_proxy: String::new(),
+            update_last_check: 0,
+            update_skip: String::new(),
             auto_reload: false,
             autodetect_scroll_end: false,
             highlight_limit_mb: 4.0,

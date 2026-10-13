@@ -1,12 +1,13 @@
 [package]
 name = "notepad-rs"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.85"
 resolver = "3"
 description = "Notepad++-style text editor for Linux"
 authors = ["© StofflHD and Claude"]
 license = "GPL-3.0-or-later"
+repository = "https://github.com/StofflHD/notepad-rs"
 
 [dependencies]
 # Pinned: the egui API changes between releases.

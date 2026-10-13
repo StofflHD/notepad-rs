@@ -261,6 +261,8 @@ pub enum Cmd {
     // Help
     About,
     CommandLineHelp,
+    CheckUpdate,
+    UpdaterProxy,
     DebugInfo,
     OpenUrl(String),
 }
@@ -539,6 +541,8 @@ fn build_registry() -> Vec<Entry> {
         e!("plugins.folder", OpenPluginsFolder, "Open Plugins Folder..."),
         e!("help.about", About, "About NotepadRS", "F1"),
         e!("help.cmdline", CommandLineHelp, "Command Line Arguments..."),
+        e!("help.update", CheckUpdate, "Update NotepadRS"),
+        e!("help.update_proxy", UpdaterProxy, "Set Updater Proxy..."),
         e!("help.debug", DebugInfo, "Debug Info..."),
     ];
     for i in 1..=5u8 {

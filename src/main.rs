@@ -18,6 +18,7 @@ mod settings;
 mod textops;
 mod tools;
 mod udl;
+mod update;
 mod ui_dialogs;
 mod ui_menus;
 mod ui_panels;
