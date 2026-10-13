@@ -528,7 +528,7 @@ impl App {
                 self.mi(ui, cmds, Cmd::EditContextMenu);
                 ui.separator();
                 if ui.checkbox(&mut self.s.dark_mode, tr("Dark Mode")).changed() {
-                    ui.ctx().set_visuals(if self.s.dark_mode { egui::Visuals::dark() } else { egui::Visuals::light() });
+                    crate::theme::apply(ui.ctx(), self.s.dark_mode);
                 }
             });
 
@@ -821,9 +821,9 @@ impl App {
                     p.rect_filled(strip, 0.0, c);
                 }
                 if active && vertical {
-                    p.line_segment([rect.left_top() + vec2(0.5, 2.0), rect.left_bottom() + vec2(0.5, -2.0)], Stroke::new(3.0_f32, Color32::from_rgb(250, 160, 30)));
+                    p.line_segment([rect.left_top() + vec2(0.5, 2.0), rect.left_bottom() + vec2(0.5, -2.0)], Stroke::new(3.0_f32, crate::theme::accent(app.s.dark_mode)));
                 } else if active {
-                    p.line_segment([rect.left_top() + vec2(2.0, 0.5), rect.right_top() + vec2(-2.0, 0.5)], Stroke::new(3.0_f32, Color32::from_rgb(250, 160, 30)));
+                    p.line_segment([rect.left_top() + vec2(2.0, 0.5), rect.right_top() + vec2(-2.0, 0.5)], Stroke::new(3.0_f32, crate::theme::accent(app.s.dark_mode)));
                 } else {
                     p.rect_stroke(rect, round, Stroke::new(1.0_f32, vis.widgets.noninteractive.bg_stroke.color));
                 }

@@ -16,6 +16,7 @@ mod project;
 mod search;
 mod settings;
 mod textops;
+mod theme;
 mod tools;
 mod tray;
 mod udl;

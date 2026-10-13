@@ -253,7 +253,7 @@ impl App {
         crate::i18n::set_language(&s.ui_lang);
         fonts::apply(ctx, s.font_path.as_deref());
         ctx.options_mut(|o| o.zoom_with_keyboard = false);
-        ctx.set_visuals(if s.dark_mode { egui::Visuals::dark() } else { egui::Visuals::light() });
+        crate::theme::apply(ctx, s.dark_mode);
         ctx.set_zoom_factor(s.ui_scale.clamp(0.5, 3.0));
 
         let hl = Highlighting::new();
@@ -1559,7 +1559,7 @@ impl App {
         let editor_rect = ui.available_rect_before_wrap();
         // Active view marker
         if !self.panes[1].tabs.is_empty() && pane == self.cur {
-            ui.painter().line_segment([editor_rect.left_top(), editor_rect.right_top()], egui::Stroke::new(2.0_f32, Color32::from_rgb(250, 160, 30)));
+            ui.painter().line_segment([editor_rect.left_top(), editor_rect.right_top()], egui::Stroke::new(2.0_f32, crate::theme::accent(self.s.dark_mode)));
         }
         let mut ui = ui.new_child(egui::UiBuilder::new().max_rect(editor_rect));
         if self.focus_editor && pane == self.cur && !self.find.open && !self.dlg.any_text_dialog() && self.inc_search.is_none() {

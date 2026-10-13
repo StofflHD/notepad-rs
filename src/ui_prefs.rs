@@ -196,7 +196,7 @@ impl App {
                 ui.add_space(6.0);
                 ui.label(RichText::new(tr("Dark Mode")).strong());
                 if ui.checkbox(&mut s.dark_mode, tr("Enable dark mode")).changed() {
-                    ctx.set_visuals(if s.dark_mode { egui::Visuals::dark() } else { egui::Visuals::light() });
+                    crate::theme::apply(ctx, s.dark_mode);
                 }
                 ui.horizontal(|ui| {
                     ui.label(tr("UI scale"));

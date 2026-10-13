@@ -1135,7 +1135,7 @@ impl App {
             let mut open = true;
             egui::Window::new(trf("About {}", &[&APP_NAME])).open(&mut open).collapsible(false).resizable(false).anchor(Align2::CENTER_CENTER, vec2(0.0, 0.0)).show(ctx, |ui| {
                 ui.vertical_centered(|ui| {
-                    ui.heading(format!("{APP_NAME} {}", env!("CARGO_PKG_VERSION")));
+                    ui.label(RichText::new(format!("{APP_NAME} {}", env!("CARGO_PKG_VERSION"))).heading().color(crate::theme::accent(self.s.dark_mode)));
                     ui.label(tr("A Notepad++ style text and source code editor for Linux, written in Rust."));
                     ui.add_space(6.0);
                     ui.label(trf("{} languages with syntax highlighting, {} colour themes.", &[&self.hl.syntax_names().len(), &self.hl.theme_names().len()]));
