@@ -873,4 +873,11 @@ pub const ENTRIES: &[(&str, &str)] = &[
     ("Updater", "Updater"),
     ("{} {} is available (installed: {}).", "{} {} ist verfügbar (installiert: {})."),
     ("{} {} is up to date.", "{} {} ist aktuell."),
+    ("No system tray available: {}", "Kein Infobereich (System-Tray) verfügbar: {}"),
+    ("System tray", "Infobereich (System-Tray)"),
+    ("Don't use system tray", "Infobereich nicht verwenden"),
+    ("Minimize to system tray", "In den Infobereich minimieren"),
+    ("Close to system tray", "In den Infobereich schließen"),
+    ("Minimize / Close to system tray", "In den Infobereich minimieren / schließen"),
+    ("Activate NotepadRS", "NotepadRS aktivieren"),
 ];

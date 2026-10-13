@@ -17,6 +17,7 @@ mod search;
 mod settings;
 mod textops;
 mod tools;
+mod tray;
 mod udl;
 mod update;
 mod ui_dialogs;
@@ -65,6 +66,7 @@ fn parse_args(args: &[String]) -> (CliOptions, bool) {
             _ if l == "-nosession" => o.no_session = true,
             _ if l == "-ro" => o.read_only = true,
             _ if l == "-alwaysontop" => o.always_on_top = true,
+            _ if l == "-systemtray" => o.system_tray = true,
             _ if l == "-notabbar" => o.no_tab_bar = true,
             _ if l == "-monitor" => o.monitor = true,
             _ if l == "-r" => recursive = true,

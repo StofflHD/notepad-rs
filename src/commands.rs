@@ -247,7 +247,10 @@ impl App {
                     self.open_path(Path::new(&p));
                 }
             }
-            Cmd::Exit => ctx.send_viewport_cmd(ViewportCommand::Close),
+            Cmd::Exit => {
+                self.explicit_exit = true;
+                ctx.send_viewport_cmd(ViewportCommand::Close);
+            }
 
             // ---- Edit ------------------------------------------------------------------------
             Cmd::Undo => self.doc_mut().undo(),

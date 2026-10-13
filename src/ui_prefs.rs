@@ -528,6 +528,19 @@ impl App {
                 ui.checkbox(&mut s.auto_reload, tr("Update silently"));
                 ui.checkbox(&mut s.autodetect_scroll_end, tr("Scroll to the last line after update"));
                 ui.add_space(6.0);
+                ui.label(RichText::new(tr("System tray")).strong());
+                {
+                    use crate::settings::TrayMode;
+                    for (m, l) in [
+                        (TrayMode::Off, "Don't use system tray"),
+                        (TrayMode::Minimize, "Minimize to system tray"),
+                        (TrayMode::Close, "Close to system tray"),
+                        (TrayMode::MinimizeAndClose, "Minimize / Close to system tray"),
+                    ] {
+                        ui.radio_value(&mut s.tray, m, tr(l));
+                    }
+                }
+                ui.add_space(6.0);
                 ui.label(RichText::new(tr("Updater")).strong());
                 ui.checkbox(&mut s.update_auto_check, tr("Check for updates at startup (once a day)"));
                 ui.horizontal(|ui| {

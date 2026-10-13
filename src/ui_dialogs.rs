@@ -1293,6 +1293,7 @@ impl App {
             }
             (Some(4), UpdateState::Installed(p)) => {
                 self.restart_exe = Some(p.clone());
+                self.explicit_exit = true;
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                 keep = false;
             }
@@ -1377,7 +1378,7 @@ impl App {
 
 pub const CMDLINE_HELP: &str = "notepad-rs [--help] [--new-instance] [-multiInst] [-nosession] [-ro]
            [-n<line>] [-c<column>] [-l<language>] [-udl=\"<name>\"]
-           [-alwaysOnTop] [-notabbar] [-monitor] [-openSession <file>]
+           [-alwaysOnTop] [-systemtray] [-notabbar] [-monitor] [-openSession <file>]
            [-r] [file …]
 
   --help              this help
@@ -1390,6 +1391,7 @@ pub const CMDLINE_HELP: &str = "notepad-rs [--help] [--new-instance] [-multiInst
   -l<language>        language of the opened files (e.g. -lPython)
   -udl=\"<name>\"       user defined language of the opened files
   -alwaysOnTop        keep the window on top
+  -systemtray         start minimized to the system tray
   -notabbar           hide the tab bar
   -monitor            open the files with monitoring (tail -f)
   -openSession <file> load a session file

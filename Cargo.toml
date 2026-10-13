@@ -1,6 +1,6 @@
 [package]
 name = "notepad-rs"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 rust-version = "1.85"
 resolver = "3"
@@ -31,6 +31,7 @@ walkdir = "2"
 globset = "0.4"
 rand = "0.8"
 arboard = { version = "3", default-features = false, features = ["wayland-data-control"] }
+ksni = { version = "0.3", default-features = false, features = ["async-io", "blocking"] }
 
 [profile.release]
 opt-level = 3

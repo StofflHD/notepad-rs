@@ -34,6 +34,7 @@ pub struct CliOptions {
     pub no_session: bool,
     pub read_only: bool,
     pub always_on_top: bool,
+    pub system_tray: bool,
     pub no_tab_bar: bool,
     pub open_session: Option<PathBuf>,
     pub monitor: bool,
@@ -201,6 +202,16 @@ pub struct App {
     pub update: Option<crate::ui_dialogs::UpdateDlg>,
     /// Program to start after the window has closed (restart after an update).
     pub restart_exe: Option<PathBuf>,
+    /// System tray: icon while the window is hidden, its events, state.
+    pub tray: Option<crate::tray::Handle>,
+    pub tray_rx: Option<Receiver<crate::tray::Event>>,
+    pub in_tray: bool,
+    /// Restored from the tray; the viewport may still report "minimized" for a few frames.
+    pub tray_restoring: bool,
+    /// Start hidden in the tray (-systemtray), applied in the first frame.
+    pub start_in_tray: bool,
+    /// File → Exit / tray Exit: close even with "close to tray".
+    pub explicit_exit: bool,
     pub allow_close: bool,
     pub close_after_save: Option<u64>,
     pub closed_paths: Vec<String>,
@@ -290,6 +301,12 @@ impl App {
             update_rx: None,
             update: None,
             restart_exe: None,
+            tray: None,
+            tray_rx: None,
+            in_tray: false,
+            tray_restoring: false,
+            start_in_tray: false,
+            explicit_exit: false,
             allow_close: false,
             close_after_save: None,
             closed_paths: Vec::new(),
@@ -358,6 +375,7 @@ impl App {
         if app.docs.is_empty() {
             app.new_doc();
         }
+        app.start_in_tray = cli.system_tray;
         if cli.always_on_top {
             app.always_on_top = true;
             ctx.send_viewport_cmd(ViewportCommand::WindowLevel(egui::WindowLevel::AlwaysOnTop));
@@ -390,6 +408,7 @@ impl App {
             let (tx, rx) = channel();
             let ctx2 = ctx.clone();
             app.owns_socket = ipc::listen(tx, move || {
+                ctx2.send_viewport_cmd(ViewportCommand::Visible(true));
                 ctx2.send_viewport_cmd(ViewportCommand::Focus);
                 ctx2.request_repaint();
             });
@@ -427,6 +446,65 @@ impl App {
         crate::update::spawn_install(rel, target, self.s.update_proxy.clone(), tx, move || ctx2.request_repaint());
         self.update_rx = Some(rx);
         self.update = Some(crate::ui_dialogs::UpdateDlg { state: crate::ui_dialogs::UpdateState::Installing, manual: true });
+    }
+
+    /// Hides the window and shows the tray icon. Returns false when there is no tray.
+    pub fn hide_to_tray(&mut self, ctx: &egui::Context) -> bool {
+        if self.tray.is_none() {
+            let (tx, rx) = channel();
+            let tip = self.doc().title();
+            match crate::tray::show(ctx, tx, tip) {
+                Ok(h) => {
+                    self.tray = Some(h);
+                    self.tray_rx = Some(rx);
+                }
+                Err(e) => {
+                    self.message = Some((tr("System tray").into(), trf("No system tray available: {}", &[&e])));
+                    return false;
+                }
+            }
+        }
+        self.persist(false);
+        ctx.send_viewport_cmd(ViewportCommand::Visible(false));
+        self.in_tray = true;
+        true
+    }
+
+    pub fn show_from_tray(&mut self, ctx: &egui::Context) {
+        ctx.send_viewport_cmd(ViewportCommand::Visible(true));
+        ctx.send_viewport_cmd(ViewportCommand::Minimized(false));
+        ctx.send_viewport_cmd(ViewportCommand::Focus);
+        self.in_tray = false;
+        self.tray_restoring = true;
+        self.tray_rx = None;
+        if let Some(h) = self.tray.take() {
+            std::thread::spawn(move || h.remove());
+        }
+    }
+
+    fn poll_tray(&mut self, ctx: &egui::Context) {
+        use crate::settings::TrayMode;
+        if std::mem::take(&mut self.start_in_tray) {
+            self.hide_to_tray(ctx);
+            return;
+        }
+        let events: Vec<crate::tray::Event> = self.tray_rx.as_ref().map(|rx| rx.try_iter().collect()).unwrap_or_default();
+        for ev in events {
+            self.show_from_tray(ctx);
+            match ev {
+                crate::tray::Event::Show => {}
+                crate::tray::Event::New => self.run(ctx, Cmd::New),
+                crate::tray::Event::Open => self.run(ctx, Cmd::Open),
+                crate::tray::Event::Exit => self.run(ctx, Cmd::Exit),
+            }
+        }
+        let minimized = ctx.input(|i| i.viewport().minimized.unwrap_or(false));
+        if !minimized {
+            self.tray_restoring = false;
+        }
+        if minimized && !self.in_tray && !self.tray_restoring && matches!(self.s.tray, TrayMode::Minimize | TrayMode::MinimizeAndClose) {
+            self.hide_to_tray(ctx);
+        }
     }
 
     fn poll_update(&mut self) {
@@ -1331,10 +1409,15 @@ impl App {
         }
         self.poll_find_in_files();
         self.poll_update();
+        self.poll_tray(ctx);
         self.update_function_list(ctx);
 
         // Close request (window manager, Alt+F4, File → Exit)
-        if ctx.input(|i| i.viewport().close_requested()) {
+        let close_to_tray = matches!(self.s.tray, crate::settings::TrayMode::Close | crate::settings::TrayMode::MinimizeAndClose);
+        if ctx.input(|i| i.viewport().close_requested()) && close_to_tray && !self.explicit_exit && !self.allow_close && self.hide_to_tray(ctx) {
+            ctx.send_viewport_cmd(ViewportCommand::CancelClose);
+        } else if ctx.input(|i| i.viewport().close_requested()) {
+            self.explicit_exit = false;
             if self.allow_close || (self.s.remember_session && !self.no_session) {
                 self.persist(true);
                 if self.owns_socket {

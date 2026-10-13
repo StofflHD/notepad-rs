@@ -47,6 +47,16 @@ pub enum OpenDir {
     Custom,
 }
 
+/// Preferences > MISC. > System tray (like Notepad++).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum TrayMode {
+    #[default]
+    Off,
+    Minimize,
+    Close,
+    MinimizeAndClose,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Completion {
     Off,
@@ -219,6 +229,7 @@ pub struct Settings {
     pub file_autodetect: bool,
     /// Updater: check GitHub for a new version at startup (at most once a day).
     pub update_auto_check: bool,
+    pub tray: TrayMode,
     /// Proxy for the updater, e.g. `http://proxy:3128` (empty = none).
     pub update_proxy: String,
     /// Unix time of the last automatic check.
@@ -351,6 +362,7 @@ impl Default for Settings {
             single_instance: true,
             file_autodetect: true,
             update_auto_check: true,
+            tray: TrayMode::Off,
             update_proxy: String::new(),
             update_last_check: 0,
             update_skip: String::new(),

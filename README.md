@@ -37,7 +37,7 @@ and change history margins, edge line, smart highlighting, matching braces/tags,
 (language keywords, words, paths), function parameter hints (Ctrl+Shift+Space or when typing `(`),
 auto-closing of brackets/quotes/tags, clickable links, drag & drop of text (move/copy), overwrite
 mode, session snapshot incl. unsaved changes, backup on save, detection of externally modified
-files, single instance.
+files, single instance, minimize/close to the system tray.
 
 ### Script plugins
 
@@ -70,11 +70,19 @@ AppImage, verifies its SHA-256 checksum (`.sha256` asset of the release) and rep
 file in place; *Restart now* starts the new version. Downloads use `curl` (or `wget`), optionally
 through the proxy from *? → Set Updater Proxy*. Before 1.0, pre-releases are offered as updates.
 
+### System tray
+
+*Settings → Preferences → MISC. → System tray*: minimize and/or close to the system tray, like
+Notepad++. While the window is hidden, a tray icon (freedesktop StatusNotifierItem) restores it
+with a click and offers *New*, *Open…* and *Exit*; *File → Exit* always quits. Supported by KDE
+Plasma, Xfce, Cinnamon, LXQt, MATE and others; GNOME needs the *AppIndicator* extension.
+`-systemtray` starts hidden in the tray.
+
 ### Command line
 
 ```
 notepad-rs [-multiInst] [-nosession] [-ro] [-n<line>] [-c<column>] [-l<language>] [-udl="<name>"]
-           [-alwaysOnTop] [-notabbar] [-monitor] [-openSession <file>] [-r] [file …]
+           [-alwaysOnTop] [-systemtray] [-notabbar] [-monitor] [-openSession <file>] [-r] [file …]
 ```
 
 ## Not implemented / different
@@ -82,13 +90,12 @@ notepad-rs [-multiInst] [-nosession] [-ro] [-n<line>] [-c<column>] [-l<language>
 - **Native Notepad++ plugins** (Windows DLLs) and *Plugins Admin* – built-in equivalents and script
   plugins instead.
 - Right-to-left text direction (egui does not support bidirectional text rendering).
-- Minimize to tray. File association uses a desktop entry and `mimeapps.list` instead of the
-  Windows registry.
+- File association uses a desktop entry and `mimeapps.list` instead of the Windows registry.
 
 ## Building
 
 ```bash
-cargo test                          # 59 tests: core, editor widget, app flows (headless), translation, updater
+cargo test                          # 60 tests: core, editor widget, app flows (headless), translation, updater
 cargo run --release -- file.txt     # run directly
 packaging/build-appimage.sh         # -> dist/NotepadRS-<version>-x86_64.AppImage
 ```
@@ -108,7 +115,7 @@ Settings, session, UDLs, themes and plugins are stored in `~/.config/notepad-rs/
 | `src/highlight.rs`, `src/fold.rs`, `src/udl.rs` | Syntax highlighting, fold structure, user defined languages |
 | `src/search.rs`, `src/findfiles.rs` | Find/replace, find in files |
 | `src/textops.rs`, `src/tools.rs` | Text/line operations; hashes, MIME/JSON/XML, compare, HTML/RTF export, printing, recycle bin, run, script plugins |
-| `src/api.rs`, `src/assoc.rs`, `src/update.rs` | Function parameter hints (Notepad++ API XML), file association, updater |
+| `src/api.rs`, `src/assoc.rs`, `src/update.rs`, `src/tray.rs` | Function parameter hints (Notepad++ API XML), file association, updater, system tray |
 | `src/cmd.rs`, `src/commands.rs` | Command registry (IDs, labels, shortcuts) and command execution |
 | `src/app.rs`, `src/ui_*.rs` | Window, two views, session; menus, dialogs, preferences, panels |
 | `src/i18n*.rs` | Translation (English → German) |
