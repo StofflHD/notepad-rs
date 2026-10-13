@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=NotepadRS
+GenericName=Text Editor
+GenericName[de]=Texteditor
+Comment=Notepad++-style text and source code editor
+Comment[de]=Text- und Quelltext-Editor im Stil von Notepad++
+Exec=notepad-rs %F
+Icon=notepad-rs
+Terminal=false
+Categories=Utility;TextEditor;Development;
+MimeType=text/plain;text/x-csrc;text/x-chdr;text/x-c++src;text/x-python;text/x-shellscript;text/x-log;text/markdown;application/json;application/xml;text/xml;text/html;text/css;application/javascript;text/x-rust;application/x-yaml;text/x-ini;
+Keywords=Notepad;Notepad++;Editor;Text;Code;
+StartupWMClass=notepad-rs
+StartupNotify=true
