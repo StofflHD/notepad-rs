@@ -880,4 +880,5 @@ pub const ENTRIES: &[(&str, &str)] = &[
     ("Close to system tray", "In den Infobereich schließen"),
     ("Minimize / Close to system tray", "In den Infobereich minimieren / schließen"),
     ("Activate NotepadRS", "NotepadRS aktivieren"),
+    ("Toolbar icons: Notepad++ Fluent UI icon set (GPL-3.0), recoloured.", "Symbolleisten-Icons: Notepad++ Fluent-UI-Iconsatz (GPL-3.0), umgefärbt."),
 ];

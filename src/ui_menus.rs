@@ -673,80 +673,88 @@ impl App {
     }
 
     pub fn toolbar(&mut self, ui: &mut Ui, cmds: &mut Vec<Cmd>) {
+        /// (icon, command, enabled, toggle state)
+        type ToolButton = (&'static str, Cmd, bool, Option<bool>);
+        // Same buttons and order as the Notepad++ toolbar.
+        let d = self.doc();
+        let (undo, redo, dirty, unsaved, monitoring) = (d.can_undo(), d.can_redo(), d.is_dirty(), d.path.is_none(), d.monitoring);
+        let any_dirty = self.docs.iter().any(|d| d.is_dirty());
+        let rec = self.macro_.recording.is_some();
+        let has_macro = !self.macro_.last.is_empty();
+        let s = self.s.clone();
+        let dark = s.dark_mode;
+        // None = separator
+        let items: Vec<Option<ToolButton>> = vec![
+            Some(("new", Cmd::New, true, None)),
+            Some(("open", Cmd::Open, true, None)),
+            Some(("save", Cmd::Save, dirty || unsaved, None)),
+            Some(("saveall", Cmd::SaveAll, any_dirty, None)),
+            Some(("close", Cmd::Close, true, None)),
+            Some(("closeall", Cmd::CloseAll, true, None)),
+            Some(("print", Cmd::Print, true, None)),
+            None,
+            Some(("cut", Cmd::Cut, true, None)),
+            Some(("copy", Cmd::Copy, true, None)),
+            Some(("paste", Cmd::Paste, true, None)),
+            None,
+            Some(("undo", Cmd::Undo, undo, None)),
+            Some(("redo", Cmd::Redo, redo, None)),
+            None,
+            Some(("find", Cmd::Find, true, None)),
+            Some(("findrep", Cmd::Replace, true, None)),
+            None,
+            Some(("zoomIn", Cmd::ZoomIn, true, None)),
+            Some(("zoomOut", Cmd::ZoomOut, true, None)),
+            None,
+            Some(("syncV", Cmd::SyncVertical, true, Some(self.sync_v))),
+            Some(("syncH", Cmd::SyncHorizontal, true, Some(self.sync_h))),
+            None,
+            Some(("wrap", Cmd::ToggleWrap, true, Some(s.word_wrap))),
+            Some(("allChars", Cmd::ToggleShowAll, true, Some(s.show_whitespace && s.show_eol))),
+            Some(("indentGuide", Cmd::ToggleIndentGuides, true, Some(s.show_indent_guides))),
+            None,
+            Some(("udl", Cmd::DefineLanguage, true, None)),
+            Some(("docMap", Cmd::DocMap, true, Some(s.show_doc_map))),
+            Some(("docList", Cmd::DocList, true, Some(s.show_doc_list))),
+            Some(("funcList", Cmd::FunctionList, true, Some(s.show_function_list))),
+            Some(("fileBrowser", Cmd::FolderWorkspace, true, Some(s.show_workspace))),
+            None,
+            Some(("monitoring", Cmd::Monitoring, true, Some(monitoring))),
+            None,
+            Some(("startrecord", Cmd::MacroRecord, !rec, None)),
+            Some(("stoprecord", Cmd::MacroStop, rec, None)),
+            Some(("playrecord", Cmd::MacroPlay, !rec && has_macro, None)),
+            Some(("playrecord_m", Cmd::MacroRunMulti, !rec && has_macro, None)),
+            Some(("saverecord", Cmd::MacroSave, !rec && has_macro, None)),
+        ];
+        let ctx = ui.ctx().clone();
         ui.horizontal(|ui| {
-            ui.spacing_mut().item_spacing.x = 2.0;
-            let sc = |c: &Cmd, s: &crate::settings::Settings| {
-                let t = cmd::shortcut_text(c, &s.shortcuts);
-                if t.is_empty() {
-                    cmd::label(c)
-                } else {
-                    format!("{} ({t})", cmd::label(c))
+            ui.spacing_mut().item_spacing.x = 1.0;
+            for item in items {
+                let Some((icon, c, enabled, state)) = item else {
+                    ui.separator();
+                    continue;
+                };
+                let Some(tex) = self.icons.get(&ctx, dark, icon) else { continue };
+                // Own button like Notepad++: 24×22 with a 16 px icon; pressed toggles and hovered
+                // buttons get a frame, disabled icons are faded.
+                let sense = if enabled { Sense::click() } else { Sense::hover() };
+                let (rect, r) = ui.allocate_exact_size(vec2(24.0, 22.0), sense);
+                let vis = ui.visuals();
+                let on = state.unwrap_or(false);
+                if on || (r.hovered() && enabled) {
+                    let (fill, stroke) = if on { (vis.widgets.active.bg_fill, vis.widgets.active.bg_stroke) } else { (vis.widgets.hovered.bg_fill, vis.widgets.noninteractive.bg_stroke) };
+                    ui.painter().rect(rect, 3.0, fill, stroke);
                 }
-            };
-            let mut b = |ui: &mut Ui, icon: &str, c: Cmd, enabled: bool, s: &crate::settings::Settings| {
-                let r = ui.add_enabled(enabled, Button::new(RichText::new(icon).size(15.0)).frame(false).min_size(vec2(26.0, 24.0)));
-                if r.on_hover_text(sc(&c, s)).clicked() {
+                let tint = if enabled { Color32::WHITE } else { Color32::from_white_alpha(80) };
+                let icon_rect = egui::Rect::from_center_size(rect.center(), vec2(16.0, 16.0));
+                ui.painter().image(tex, icon_rect, egui::Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), tint);
+                let t = cmd::shortcut_text(&c, &s.shortcuts);
+                let tip = if t.is_empty() { cmd::label(&c) } else { format!("{} ({t})", cmd::label(&c)) };
+                if r.on_hover_text(tip).clicked() {
                     cmds.push(c);
                 }
-            };
-            let d = self.doc();
-            let (undo, redo, dirty, unsaved) = (d.can_undo(), d.can_redo(), d.is_dirty(), d.path.is_none());
-            let any_dirty = self.docs.iter().any(|d| d.is_dirty());
-            let s = self.s.clone();
-            b(ui, "🗋", Cmd::New, true, &s);
-            b(ui, "🗁", Cmd::Open, true, &s);
-            b(ui, "💾", Cmd::Save, dirty || unsaved, &s);
-            b(ui, "🗐", Cmd::SaveAll, any_dirty, &s);
-            b(ui, "🗙", Cmd::Close, true, &s);
-            b(ui, "🖶", Cmd::Print, true, &s);
-            ui.separator();
-            b(ui, "✂", Cmd::Cut, true, &s);
-            b(ui, "🗍", Cmd::Copy, true, &s);
-            b(ui, "🖹", Cmd::Paste, true, &s);
-            ui.separator();
-            b(ui, "⮪", Cmd::Undo, undo, &s);
-            b(ui, "⮫", Cmd::Redo, redo, &s);
-            ui.separator();
-            b(ui, "🔍", Cmd::Find, true, &s);
-            b(ui, "🔁", Cmd::Replace, true, &s);
-            ui.separator();
-            b(ui, "🔎+", Cmd::ZoomIn, true, &s);
-            b(ui, "🔎-", Cmd::ZoomOut, true, &s);
-            ui.separator();
-            let toggle = |ui: &mut Ui, v: bool, icon: &str, c: Cmd, cmds: &mut Vec<Cmd>| {
-                if ui.add(egui::SelectableLabel::new(v, RichText::new(icon).size(15.0))).on_hover_text(cmd::label(&c)).clicked() {
-                    cmds.push(c);
-                }
-            };
-            toggle(ui, self.sync_v, "⇕", Cmd::SyncVertical, cmds);
-            toggle(ui, self.sync_h, "⇔", Cmd::SyncHorizontal, cmds);
-            toggle(ui, self.s.word_wrap, "↩", Cmd::ToggleWrap, cmds);
-            toggle(ui, self.s.show_whitespace && self.s.show_eol, "¶", Cmd::ToggleShowAll, cmds);
-            toggle(ui, self.s.show_indent_guides, "⁞", Cmd::ToggleIndentGuides, cmds);
-            ui.separator();
-            toggle(ui, self.s.show_doc_map, "▤", Cmd::DocMap, cmds);
-            toggle(ui, self.s.show_doc_list, "☰", Cmd::DocList, cmds);
-            toggle(ui, self.s.show_function_list, "ƒ", Cmd::FunctionList, cmds);
-            toggle(ui, self.s.show_workspace, "🗀", Cmd::FolderWorkspace, cmds);
-            ui.separator();
-            toggle(ui, self.doc().monitoring, "👁", Cmd::Monitoring, cmds);
-            ui.separator();
-            let rec = self.macro_.recording.is_some();
-            let mut mb = |ui: &mut Ui, icon: &str, c: Cmd, enabled: bool, color: Option<Color32>| {
-                let mut t = RichText::new(icon).size(15.0);
-                if let Some(col) = color {
-                    t = t.color(col);
-                }
-                if ui.add_enabled(enabled, Button::new(t).frame(false).min_size(vec2(26.0, 24.0))).on_hover_text(cmd::label(&c)).clicked() {
-                    cmds.push(c);
-                }
-            };
-            let has_macro = !self.macro_.last.is_empty();
-            mb(ui, "⏺", Cmd::MacroRecord, !rec, Some(Color32::from_rgb(210, 40, 40)));
-            mb(ui, "⏹", Cmd::MacroStop, rec, None);
-            mb(ui, "▶", Cmd::MacroPlay, !rec && has_macro, None);
-            mb(ui, "⏩", Cmd::MacroRunMulti, !rec && has_macro, None);
-            mb(ui, "🖫", Cmd::MacroSave, !rec && has_macro, None);
+            }
         });
     }
 

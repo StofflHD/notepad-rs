@@ -202,6 +202,7 @@ pub struct App {
     pub update: Option<crate::ui_dialogs::UpdateDlg>,
     /// Program to start after the window has closed (restart after an update).
     pub restart_exe: Option<PathBuf>,
+    pub icons: crate::icons::Icons,
     /// System tray: icon while the window is hidden, its events, state.
     pub tray: Option<crate::tray::Handle>,
     pub tray_rx: Option<Receiver<crate::tray::Event>>,
@@ -301,6 +302,7 @@ impl App {
             update_rx: None,
             update: None,
             restart_exe: None,
+            icons: Default::default(),
             tray: None,
             tray_rx: None,
             in_tray: false,

@@ -1142,6 +1142,7 @@ impl App {
                     ui.add_space(6.0);
                     ui.label(RichText::new(tr("UI: egui/eframe · Highlighting: syntect with the syntax definitions of bat (two-face)")).small());
                     ui.label(RichText::new(tr("Independent re-implementation – no code from Notepad++ was used.")).small());
+                    ui.label(RichText::new(tr("Toolbar icons: Notepad++ Fluent UI icon set (GPL-3.0), recoloured.")).small());
                     ui.add_space(6.0);
                     ui.label(env!("CARGO_PKG_AUTHORS"));
                 });

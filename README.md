@@ -5,7 +5,9 @@ for Linux, shipped as a single AppImage.
 
 Notepad++ itself is a pure Win32 application (C++, Win32 API, Scintilla) and cannot be ported
 directly. NotepadRS is a **reimplementation in Rust** that follows the menu structure, commands,
-shortcuts and file formats of Notepad++ – no code was taken from Notepad++.
+shortcuts and file formats of Notepad++ – no code was taken from Notepad++. The toolbar uses the
+Notepad++ *Fluent UI* icons (GPL-3.0, see [assets/toolbar](assets/toolbar/README.md)), recoloured
+in the rust accent of NotepadRS.
 
 User interface: **English** (default) and German – switchable under
 *Settings → Preferences → General → Localization*.
@@ -95,7 +97,7 @@ notepad-rs [-multiInst] [-nosession] [-ro] [-n<line>] [-c<column>] [-l<language>
 ## Building
 
 ```bash
-cargo test                          # 60 tests: core, editor widget, app flows (headless), translation, updater
+cargo test                          # 62 tests: core, editor widget, app flows (headless), translation, updater
 cargo run --release -- file.txt     # run directly
 packaging/build-appimage.sh         # -> dist/NotepadRS-<version>-x86_64.AppImage
 ```
@@ -118,6 +120,7 @@ Settings, session, UDLs, themes and plugins are stored in `~/.config/notepad-rs/
 | `src/api.rs`, `src/assoc.rs`, `src/update.rs`, `src/tray.rs` | Function parameter hints (Notepad++ API XML), file association, updater, system tray |
 | `src/cmd.rs`, `src/commands.rs` | Command registry (IDs, labels, shortcuts) and command execution |
 | `src/app.rs`, `src/ui_*.rs` | Window, two views, session; menus, dialogs, preferences, panels |
+| `src/theme.rs`, `src/icons.rs` | UI colour scheme (dark/light), recoloured Notepad++ toolbar icons |
 | `src/i18n*.rs` | Translation (English → German) |
 | `src/project.rs`, `src/settings.rs`, `src/ipc.rs`, `src/fonts.rs` | Project panels (Notepad++ workspace XML), settings, single instance, fonts |
 
