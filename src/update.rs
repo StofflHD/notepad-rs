@@ -156,7 +156,19 @@ pub fn spawn_check(proxy: String, tx: Sender<Msg>, wake: impl Fn() + Send + 'sta
     });
 }
 
-/// Downloads the AppImage of `rel` next to `target`, verifies it and replaces `target`.
+/// Where the new AppImage goes: when the current file name contains the running version
+/// (`NotepadRS-0.1.6-x86_64.AppImage`), the new one gets the new version in its name.
+pub fn new_target(target: &Path, current: &str, new: &str) -> PathBuf {
+    let name = target.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    if !current.is_empty() && name.contains(current) {
+        target.with_file_name(name.replacen(current, new, 1))
+    } else {
+        target.to_path_buf()
+    }
+}
+
+/// Downloads the AppImage of `rel` next to `target`, verifies it and replaces `target` (renamed
+/// to the new version when its name carries the old one). Returns the path of the new AppImage.
 pub fn install(rel: &Release, target: &Path, proxy: &str) -> Result<PathBuf, String> {
     let (name, url, _) = rel.appimage.as_ref().ok_or_else(|| crate::i18n::tr("The release has no AppImage for this system.").to_string())?;
     let dir = target.parent().ok_or("no parent directory")?;
@@ -181,8 +193,12 @@ pub fn install(rel: &Release, target: &Path, proxy: &str) -> Result<PathBuf, Str
         use std::os::unix::fs::PermissionsExt;
         std::fs::set_permissions(&tmp, std::fs::Permissions::from_mode(0o755)).map_err(|e| e.to_string())?;
         // Rename is atomic; the running process keeps its (now unlinked) image mounted.
-        std::fs::rename(&tmp, target).map_err(|e| format!("{}: {e}", target.display()))?;
-        Ok(target.to_path_buf())
+        let dest = new_target(target, env!("CARGO_PKG_VERSION"), &rel.version);
+        std::fs::rename(&tmp, &dest).map_err(|e| format!("{}: {e}", dest.display()))?;
+        if dest != target {
+            let _ = std::fs::remove_file(target);
+        }
+        Ok(dest)
     })();
     if result.is_err() {
         let _ = std::fs::remove_file(&tmp);
@@ -192,7 +208,12 @@ pub fn install(rel: &Release, target: &Path, proxy: &str) -> Result<PathBuf, Str
 
 pub fn spawn_install(rel: Release, target: PathBuf, proxy: String, tx: Sender<Msg>, wake: impl Fn() + Send + 'static) {
     std::thread::spawn(move || {
-        let _ = tx.send(Msg::Installed(install(&rel, &target, &proxy)));
+        let result = install(&rel, &target, &proxy);
+        if let Ok(dest) = &result {
+            // Keep the file association pointing at the (possibly renamed) AppImage.
+            crate::assoc::refresh_exec(&crate::assoc::Dirs::user(), dest);
+        }
+        let _ = tx.send(Msg::Installed(result));
         wake();
     });
 }
@@ -243,6 +264,13 @@ mod tests {
         let json = r#"[{"tag_name":"v1.1.0-rc1","html_url":"u","prerelease":true},{"tag_name":"v1.0.0","html_url":"u","prerelease":false}]"#;
         assert_eq!(newest(json, false).unwrap().unwrap().version, "1.0.0");
         assert_eq!(newest(json, true).unwrap().unwrap().version, "1.1.0-rc1");
+    }
+
+    #[test]
+    fn versioned_file_names() {
+        let p = Path::new("/apps/NotepadRS-0.1.6-x86_64.AppImage");
+        assert_eq!(new_target(p, "0.1.6", "0.1.7"), Path::new("/apps/NotepadRS-0.1.7-x86_64.AppImage"));
+        assert_eq!(new_target(Path::new("/apps/notepad.AppImage"), "0.1.6", "0.1.7"), Path::new("/apps/notepad.AppImage"));
     }
 
     #[test]

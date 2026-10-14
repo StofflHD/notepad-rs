@@ -182,9 +182,32 @@ pub fn apply(dirs: &Dirs, selected: &BTreeSet<String>) -> Result<(), String> {
     let old = std::fs::read_to_string(&ma).unwrap_or_default();
     std::fs::create_dir_all(&dirs.config).map_err(|e| err(&dirs.config, e))?;
     std::fs::write(&ma, update_mimeapps(&old, selected)).map_err(|e| err(&ma, e))?;
-    // Refresh the desktop database when the tool exists (not required).
-    let _ = std::process::Command::new("update-desktop-database").arg(dirs.data.join("applications")).stderr(std::process::Stdio::null()).status();
+    refresh_caches(dirs);
     Ok(())
+}
+
+/// Refreshes the desktop database / KDE service cache when the tools exist (not required).
+fn refresh_caches(dirs: &Dirs) {
+    use std::process::{Command, Stdio};
+    let _ = Command::new("update-desktop-database").arg(dirs.data.join("applications")).stdout(Stdio::null()).stderr(Stdio::null()).status();
+    let _ = Command::new("kbuildsycoca6").stdout(Stdio::null()).stderr(Stdio::null()).status();
+}
+
+/// Points an installed desktop entry at `exe` (the AppImage may have been moved, renamed or
+/// replaced by the updater). Returns true when the entry was changed.
+pub fn refresh_exec(dirs: &Dirs, exe: &Path) -> bool {
+    let desktop = dirs.desktop();
+    let Ok(text) = std::fs::read_to_string(&desktop) else { return false };
+    let want = format!("Exec=\"{}\" %F", exe.display());
+    if text.lines().any(|l| l == want) {
+        return false;
+    }
+    let new: String = text.lines().map(|l| if l.starts_with("Exec=") { want.as_str() } else { l }).map(|l| format!("{l}\n")).collect();
+    if std::fs::write(&desktop, new).is_err() {
+        return false;
+    }
+    refresh_caches(dirs);
+    true
 }
 
 #[cfg(test)]
@@ -209,6 +232,13 @@ mod tests {
         apply(&dirs, &sel).unwrap();
         assert_eq!(current(&dirs), sel);
         assert!(std::fs::read_to_string(dirs.desktop()).unwrap().contains("text/x-python;"));
+        // A moved/renamed AppImage: the Exec line follows, everything else stays.
+        let moved = dir.join("NotepadRS-9.9.9-x86_64.AppImage");
+        assert!(refresh_exec(&dirs, &moved));
+        let entry = std::fs::read_to_string(dirs.desktop()).unwrap();
+        assert!(entry.contains(&format!("Exec=\"{}\" %F\n", moved.display())) && entry.contains("text/x-python;"), "{entry}");
+        assert!(!refresh_exec(&dirs, &moved), "unchanged the second time");
+        assert!(!refresh_exec(&Dirs { config: dir.join("none"), data: dir.join("none") }, &moved), "no entry installed");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }

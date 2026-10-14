@@ -416,6 +416,12 @@ impl App {
             });
             app.ipc_rx = Some(rx);
         }
+        // The AppImage may have been moved or renamed: keep the file association pointing at it.
+        if !cfg!(test) {
+            if let Some(exe) = crate::update::running_appimage() {
+                std::thread::spawn(move || crate::assoc::refresh_exec(&crate::assoc::Dirs::user(), &exe));
+            }
+        }
         // Automatic update check (at most once a day, in the background).
         let now = chrono::Utc::now().timestamp();
         if !cfg!(test) && app.s.update_auto_check && std::env::var_os("NRS_NO_UPDATE").is_none() && now - app.s.update_last_check >= 86_400 {
