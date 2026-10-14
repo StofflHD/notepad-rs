@@ -599,11 +599,12 @@ impl App {
         id
     }
 
+    /// Adds a tab at the end of the view (like Notepad++: new, opened and moved documents always
+    /// appear rightmost) and activates it.
     pub fn add_tab(&mut self, pane: usize, id: u64) {
         let p = &mut self.panes[pane];
-        let at = (p.active + 1).min(p.tabs.len());
-        p.tabs.insert(at, id);
-        p.active = at;
+        p.tabs.push(id);
+        p.active = p.tabs.len() - 1;
         self.cur = pane;
         self.focus_editor = true;
     }
@@ -1880,6 +1881,16 @@ mod tests {
         assert!(texts.contains(&"XYline1\nline2\n".to_string()), "{texts:?}");
         assert!(texts.contains(&"unsaved".to_string()));
         assert_eq!(std::fs::read_to_string(&file).unwrap(), "Xline1\r\nline2\r\n", "file untouched");
+
+        // New documents always appear as the rightmost tab, even when an earlier tab is active.
+        let mut h = h;
+        h.cmd(Cmd::New);
+        h.cmd(Cmd::New);
+        h.app.activate_tab(0, 0);
+        h.key(Key::N, Modifiers::CTRL);
+        let p = &h.app.panes[0];
+        assert_eq!(p.active, p.tabs.len() - 1, "new tab is active and last");
+        assert!(h.app.doc().text().is_empty() && h.app.doc().path.is_none());
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
