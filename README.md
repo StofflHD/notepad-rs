@@ -97,14 +97,22 @@ notepad-rs [-multiInst] [-nosession] [-ro] [-n<line>] [-c<column>] [-l<language>
 ## Building
 
 ```bash
-cargo test                          # 62 tests: core, editor widget, app flows (headless), translation, updater
+cargo test                          # 63 tests: core, editor widget, app flows (headless), translation, updater
 cargo run --release -- file.txt     # run directly
-packaging/build-appimage.sh         # -> dist/NotepadRS-<version>-x86_64.AppImage
+packaging/build-appimage.sh         # -> dist/NotepadRS-<version>-x86_64.AppImage (+ .sha256)
 ```
 
 The script downloads `appimagetool` when needed (or use `APPIMAGETOOL=/path/to/tool`).
-The binary only depends on the glibc of the build system (here 2.39 → Debian 13, Ubuntu 24.04 and
-newer). File dialogs use the XDG desktop portal (fallback: `zenity`), printing uses CUPS (`lp`).
+The binary only depends on glibc. A plain build needs the glibc of the build system; with
+`ZIGBUILD=1` (needs `cargo-zigbuild` and zig) it targets glibc 2.31 (`GLIBC=2.31`, Ubuntu 20.04,
+Debian 11 and newer), as the releases do.
+
+**CI** (`.github/workflows/appimage.yml`) runs the tests, builds the AppImage with zigbuild, checks
+the glibc requirement and starts it on Xvfb (screenshot as artifact) on every push and pull
+request. A tag `v<version>` (matching `Cargo.toml`) publishes the pre-release with the AppImage and
+its `.sha256` file for the updater; the message of an annotated tag becomes the release notes.
+
+File dialogs use the XDG desktop portal (fallback: `zenity`), printing uses CUPS (`lp`).
 
 Settings, session, UDLs, themes and plugins are stored in `~/.config/notepad-rs/`.
 

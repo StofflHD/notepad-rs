@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Builds dist/NotepadRS-<version>-x86_64.AppImage.
+# Builds dist/NotepadRS-<version>-x86_64.AppImage and its .sha256 file.
 #
 # The binary links only against glibc; OpenGL, X11/Wayland and xkbcommon are
 # loaded at runtime from the host system, as with any desktop application.
 #
 # Requirements: Rust toolchain (cargo), curl (only if appimagetool is not cached).
+# Optional: cargo-zigbuild + zig to build for an older glibc (ZIGBUILD=1, GLIBC=2.31), as in CI.
 # Usage:  packaging/build-appimage.sh      (APPIMAGETOOL=/path/to/tool to skip the download)
 set -euo pipefail
 
@@ -16,12 +17,19 @@ VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' "$ROOT/Cargo.toml" | head -1)"
 CARGO="${CARGO:-$(command -v cargo || echo "$HOME/.cargo/bin/cargo")}"
 
 echo "==> NotepadRS $VERSION"
-"$CARGO" build --release --manifest-path "$ROOT/Cargo.toml"
+if [ "${ZIGBUILD:-0}" = "1" ]; then
+    GLIBC="${GLIBC:-2.31}"
+    "$CARGO" zigbuild --release --target "x86_64-unknown-linux-gnu.$GLIBC" --manifest-path "$ROOT/Cargo.toml"
+    BIN="$ROOT/target/x86_64-unknown-linux-gnu/release/notepad-rs"
+else
+    "$CARGO" build --release --manifest-path "$ROOT/Cargo.toml"
+    BIN="$ROOT/target/release/notepad-rs"
+fi
 
 rm -rf "$APPDIR"
 mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/share/applications" \
          "$APPDIR/usr/share/icons/hicolor/256x256/apps" "$APPDIR/usr/share/icons/hicolor/scalable/apps" "$DIST"
-install -m 755 "$ROOT/target/release/notepad-rs" "$APPDIR/usr/bin/"
+install -m 755 "$BIN" "$APPDIR/usr/bin/"
 install -m 755 "$ROOT/packaging/AppRun" "$APPDIR/AppRun"
 cp "$ROOT/packaging/notepad-rs.desktop" "$APPDIR/"
 cp "$ROOT/packaging/notepad-rs.desktop" "$APPDIR/usr/share/applications/"
@@ -43,4 +51,6 @@ OUT="$DIST/NotepadRS-$VERSION-x86_64.AppImage"
 ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=1 "$TOOL" --no-appstream "$APPDIR" "$OUT.new"
 chmod +x "$OUT.new"
 mv -f "$OUT.new" "$OUT"
+# Checksum for the built-in updater (uploaded with the AppImage as a release asset).
+(cd "$DIST" && sha256sum "$(basename "$OUT")" > "$(basename "$OUT").sha256")
 echo "==> Done: $OUT"
