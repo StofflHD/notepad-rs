@@ -26,6 +26,8 @@ similar = "2"
 md-5 = "0.10"
 sha1 = "0.10"
 sha2 = "0.10"
+# Closing inherited descriptors before the restart after an update (see update.rs).
+libc = "0.2"
 base64 = "0.22"
 walkdir = "2"
 globset = "0.4"
