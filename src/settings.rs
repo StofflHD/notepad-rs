@@ -236,6 +236,8 @@ pub struct Settings {
     pub update_last_check: i64,
     /// Version the user chose to skip.
     pub update_skip: String,
+    /// Offer "Add to application menu" when started from an AppImage that is not installed.
+    pub install_prompt: bool,
     /// Reload files changed by other programs without asking (if unmodified).
     pub auto_reload: bool,
     pub autodetect_scroll_end: bool,
@@ -366,6 +368,7 @@ impl Default for Settings {
             update_proxy: String::new(),
             update_last_check: 0,
             update_skip: String::new(),
+            install_prompt: true,
             auto_reload: false,
             autodetect_scroll_end: false,
             highlight_limit_mb: 4.0,

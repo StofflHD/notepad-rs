@@ -120,6 +120,15 @@ pub enum UpdateState {
     Error(String),
 }
 
+/// "Add to application menu" / "Remove from application menu".
+pub enum InstallDlg {
+    /// `first`: offered automatically at startup (with "Don't ask again").
+    Ask { first: bool },
+    ConfirmUninstall,
+    Done(String),
+    Error(String),
+}
+
 pub struct UpdateDlg {
     pub state: UpdateState,
     /// Opened from the menu (an automatic check only shows a found update).
@@ -1129,6 +1138,7 @@ impl App {
         }
 
         self.update_ui(ctx);
+        self.install_ui(ctx);
 
         // About / command line / debug
         if self.dlg.about {
@@ -1167,6 +1177,79 @@ impl App {
             });
             self.dlg.debug = open && !esc_pressed(ctx);
         }
+    }
+
+    fn install_ui(&mut self, ctx: &egui::Context) {
+        let Some(dlg) = self.install.take() else { return };
+        let mut open = true;
+        let mut next: Option<Option<InstallDlg>> = None; // Some(None) = close
+        let apps = crate::install::apps_dir();
+        egui::Window::new(tr("Application Menu")).open(&mut open).collapsible(false).resizable(false).anchor(Align2::CENTER_CENTER, vec2(0.0, 0.0)).show(ctx, |ui| {
+            ui.set_max_width(460.0);
+            match &dlg {
+                InstallDlg::Ask { first } => {
+                    ui.label(RichText::new(tr("Add NotepadRS to the application menu?")).strong());
+                    ui.label(trf("The AppImage is moved to {} and NotepadRS appears in the start menu and in \"Open with\" lists. Updates keep working.", &[&crate::install::tilde(&apps)]));
+                    ui.add_space(6.0);
+                    ui.horizontal(|ui| {
+                        if ui.button(tr("Add to menu")).clicked() {
+                            let dirs = crate::assoc::Dirs::user();
+                            next = Some(Some(match crate::update::running_appimage().ok_or_else(|| tr("Not started from an AppImage.").to_string()).and_then(|a| crate::install::install(&dirs, &a, &apps)) {
+                                Ok(dest) => {
+                                    // The updater and the desktop entry check use the new location.
+                                    std::env::set_var("APPIMAGE", &dest);
+                                    InstallDlg::Done(trf("NotepadRS is now in the application menu.\nAppImage: {}", &[&crate::install::tilde(&dest)]))
+                                }
+                                Err(e) => InstallDlg::Error(e),
+                            }));
+                        }
+                        if ui.button(tr("Not now")).clicked() {
+                            next = Some(None);
+                        }
+                        if *first && ui.button(tr("Don't ask again")).clicked() {
+                            self.s.install_prompt = false;
+                            next = Some(None);
+                        }
+                    });
+                    if *first {
+                        ui.label(RichText::new(tr("Also available later under ? → Add to Application Menu.")).weak());
+                    }
+                }
+                InstallDlg::ConfirmUninstall => {
+                    ui.label(RichText::new(tr("Remove NotepadRS from the application menu?")).strong());
+                    ui.label(trf("Removes the start menu entry, the icon and the file associations, and deletes the AppImage in {}. Your settings are kept.", &[&crate::install::tilde(&apps)]));
+                    ui.add_space(6.0);
+                    ui.horizontal(|ui| {
+                        if ui.button(tr("Remove")).clicked() {
+                            let dirs = crate::assoc::Dirs::user();
+                            next = Some(Some(match crate::install::uninstall(&dirs, crate::update::running_appimage().as_deref(), &apps) {
+                                Ok(()) => InstallDlg::Done(tr("NotepadRS has been removed from the application menu. This window keeps working until you close it.").into()),
+                                Err(e) => InstallDlg::Error(e),
+                            }));
+                        }
+                        if ui.button(tr("Cancel")).clicked() {
+                            next = Some(None);
+                        }
+                    });
+                }
+                InstallDlg::Done(msg) | InstallDlg::Error(msg) => {
+                    if matches!(dlg, InstallDlg::Error(_)) {
+                        ui.label(RichText::new(tr("That didn't work:")).strong());
+                    }
+                    ui.label(msg);
+                    if ui.button(tr("OK")).clicked() {
+                        next = Some(None);
+                    }
+                }
+            }
+        });
+        if !open || esc_pressed(ctx) {
+            return;
+        }
+        self.install = match next {
+            Some(n) => n,
+            None => Some(dlg),
+        };
     }
 
     fn update_ui(&mut self, ctx: &egui::Context) {

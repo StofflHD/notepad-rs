@@ -651,6 +651,11 @@ impl App {
                 ui.separator();
                 self.mi(ui, cmds, Cmd::CheckUpdate);
                 self.mi(ui, cmds, Cmd::UpdaterProxy);
+                if crate::install::is_installed(&crate::assoc::Dirs::user()) {
+                    self.mi(ui, cmds, Cmd::UninstallMenu);
+                } else if crate::update::running_appimage().is_some() {
+                    self.mi(ui, cmds, Cmd::InstallMenu);
+                }
                 ui.separator();
                 for (l, u) in [
                     ("Notepad++ Online User Manual", "https://npp-user-manual.org/"),

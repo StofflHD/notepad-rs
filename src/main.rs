@@ -12,6 +12,7 @@ mod highlight;
 mod i18n;
 mod i18n_de;
 mod icons;
+mod install;
 mod ipc;
 mod project;
 mod search;

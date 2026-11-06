@@ -263,6 +263,8 @@ pub enum Cmd {
     CommandLineHelp,
     CheckUpdate,
     UpdaterProxy,
+    InstallMenu,
+    UninstallMenu,
     DebugInfo,
     OpenUrl(String),
 }
@@ -543,6 +545,8 @@ fn build_registry() -> Vec<Entry> {
         e!("help.cmdline", CommandLineHelp, "Command Line Arguments..."),
         e!("help.update", CheckUpdate, "Update NotepadRS"),
         e!("help.update_proxy", UpdaterProxy, "Set Updater Proxy..."),
+        e!("help.install", InstallMenu, "Add to Application Menu..."),
+        e!("help.uninstall", UninstallMenu, "Remove from Application Menu..."),
         e!("help.debug", DebugInfo, "Debug Info..."),
     ];
     for i in 1..=5u8 {

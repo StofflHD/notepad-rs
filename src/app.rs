@@ -200,6 +200,8 @@ pub struct App {
     /// Updater: running check/download and its dialog.
     pub update_rx: Option<Receiver<crate::update::Msg>>,
     pub update: Option<crate::ui_dialogs::UpdateDlg>,
+    /// "Add to / remove from application menu" dialog.
+    pub install: Option<crate::ui_dialogs::InstallDlg>,
     /// Program to start after the window has closed (restart after an update).
     pub restart_exe: Option<PathBuf>,
     pub icons: crate::icons::Icons,
@@ -301,6 +303,7 @@ impl App {
             exit_after: false,
             update_rx: None,
             update: None,
+            install: None,
             restart_exe: None,
             icons: Default::default(),
             tray: None,
@@ -421,6 +424,10 @@ impl App {
             if let Some(exe) = crate::update::running_appimage() {
                 std::thread::spawn(move || crate::assoc::refresh_exec(&crate::assoc::Dirs::user(), &exe));
             }
+        }
+        // First start from an AppImage that is not in the application menu yet: offer to add it.
+        if !cfg!(test) && app.s.install_prompt && crate::update::running_appimage().is_some() && !crate::install::is_installed(&crate::assoc::Dirs::user()) {
+            app.install = Some(crate::ui_dialogs::InstallDlg::Ask { first: true });
         }
         // Automatic update check (at most once a day, in the background).
         let now = chrono::Utc::now().timestamp();

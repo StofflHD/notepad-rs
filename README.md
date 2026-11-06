@@ -72,6 +72,21 @@ AppImage, verifies its SHA-256 checksum (`.sha256` asset of the release) and rep
 file in place; *Restart now* starts the new version. Downloads use `curl` (or `wget`), optionally
 through the proxy from *? → Set Updater Proxy*. Before 1.0, pre-releases are offered as updates.
 
+### Installation and application menu
+
+Download the AppImage, make it executable and start it:
+
+```bash
+chmod +x NotepadRS-*-x86_64.AppImage
+./NotepadRS-*-x86_64.AppImage
+```
+
+On the first start NotepadRS offers to **add itself to the application menu**: the AppImage is
+moved to `~/Applications`, and a desktop entry and icon are created, so NotepadRS appears in the
+start menu and in "Open with" lists of file managers. No root rights are needed, and the built-in
+updater keeps working. Later: *? → Add to Application Menu* / *? → Remove from Application Menu*
+(removes entry, icon, file associations and the AppImage in `~/Applications`; settings are kept).
+
 ### System tray
 
 *Settings → Preferences → MISC. → System tray*: minimize and/or close to the system tray, like

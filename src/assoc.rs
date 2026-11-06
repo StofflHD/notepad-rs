@@ -65,6 +65,14 @@ impl Dirs {
         self.config.join("mimeapps.list")
     }
 
+    pub fn desktop_path(&self) -> PathBuf {
+        self.desktop()
+    }
+
+    fn icon(&self) -> PathBuf {
+        self.data.join("icons/hicolor/256x256/apps/notepad-rs.png")
+    }
+
     fn desktop(&self) -> PathBuf {
         self.data.join("applications").join(DESKTOP_ID)
     }
@@ -171,17 +179,52 @@ fn desktop_entry(exe: &Path, icon: &Path, mimes: &BTreeSet<String>) -> String {
 /// Installs the desktop entry + icon and makes NotepadRS the default for `selected`
 /// (types that were associated before but are not selected any more are released).
 pub fn apply(dirs: &Dirs, selected: &BTreeSet<String>) -> Result<(), String> {
-    let err = |p: &Path, e: std::io::Error| format!("{}: {e}", p.display());
-    let icon = dirs.data.join("icons/hicolor/256x256/apps/notepad-rs.png");
-    std::fs::create_dir_all(icon.parent().unwrap()).map_err(|e| err(&icon, e))?;
-    std::fs::write(&icon, include_bytes!("../packaging/notepad-rs.png")).map_err(|e| err(&icon, e))?;
+    write_entry_for(dirs, &exe(), selected)?;
+    apply_defaults(dirs, selected)
+}
+
+fn io_err(p: &Path, e: std::io::Error) -> String {
+    format!("{}: {e}", p.display())
+}
+
+fn write_entry_for(dirs: &Dirs, exe: &Path, mimes: &BTreeSet<String>) -> Result<(), String> {
+    let icon = dirs.icon();
+    std::fs::create_dir_all(icon.parent().unwrap()).map_err(|e| io_err(&icon, e))?;
+    std::fs::write(&icon, include_bytes!("../packaging/notepad-rs.png")).map_err(|e| io_err(&icon, e))?;
     let desktop = dirs.desktop();
-    std::fs::create_dir_all(desktop.parent().unwrap()).map_err(|e| err(&desktop, e))?;
-    std::fs::write(&desktop, desktop_entry(&exe(), &icon, selected)).map_err(|e| err(&desktop, e))?;
+    std::fs::create_dir_all(desktop.parent().unwrap()).map_err(|e| io_err(&desktop, e))?;
+    std::fs::write(&desktop, desktop_entry(exe, &icon, mimes)).map_err(|e| io_err(&desktop, e))?;
+    refresh_caches(dirs);
+    Ok(())
+}
+
+/// Desktop entry (start menu, "Open with") and icon for `exe`, keeping the default
+/// applications as they are.
+pub fn write_entry(dirs: &Dirs, exe: &Path) -> Result<(), String> {
+    write_entry_for(dirs, exe, &current(dirs))
+}
+
+/// Removes desktop entry and icon.
+pub fn remove_entry(dirs: &Dirs) -> Result<(), String> {
+    for p in [dirs.desktop(), dirs.icon()] {
+        match std::fs::remove_file(&p) {
+            Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(io_err(&p, e)),
+            _ => {}
+        }
+    }
+    refresh_caches(dirs);
+    Ok(())
+}
+
+/// Makes NotepadRS the default application for exactly `selected` (in mimeapps.list).
+pub fn apply_defaults(dirs: &Dirs, selected: &BTreeSet<String>) -> Result<(), String> {
     let ma = dirs.mimeapps();
     let old = std::fs::read_to_string(&ma).unwrap_or_default();
-    std::fs::create_dir_all(&dirs.config).map_err(|e| err(&dirs.config, e))?;
-    std::fs::write(&ma, update_mimeapps(&old, selected)).map_err(|e| err(&ma, e))?;
+    if old.is_empty() && selected.is_empty() {
+        return Ok(());
+    }
+    std::fs::create_dir_all(&dirs.config).map_err(|e| io_err(&dirs.config, e))?;
+    std::fs::write(&ma, update_mimeapps(&old, selected)).map_err(|e| io_err(&ma, e))?;
     refresh_caches(dirs);
     Ok(())
 }

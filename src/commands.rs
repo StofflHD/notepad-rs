@@ -1065,6 +1065,8 @@ impl App {
             Cmd::CommandLineHelp => self.dlg.cmdline = true,
             Cmd::CheckUpdate => self.start_update_check(ctx, true),
             Cmd::UpdaterProxy => self.dlg.update_proxy = Some(self.s.update_proxy.clone()),
+            Cmd::InstallMenu => self.install = Some(crate::ui_dialogs::InstallDlg::Ask { first: false }),
+            Cmd::UninstallMenu => self.install = Some(crate::ui_dialogs::InstallDlg::ConfirmUninstall),
             Cmd::DebugInfo => self.dlg.debug = true,
             Cmd::OpenUrl(u) => {
                 let u = if u.starts_with("www.") { format!("https://{u}") } else { u };
