@@ -2137,6 +2137,7 @@ dependencies = [
  "md-5",
  "quick-xml 0.37.5",
  "rand",
+ "raw-window-handle",
  "regex",
  "rfd",
  "serde",
@@ -2147,6 +2148,9 @@ dependencies = [
  "syntect",
  "two-face",
  "walkdir",
+ "wayland-backend",
+ "wayland-client",
+ "wayland-protocols",
 ]
 
 [[package]]

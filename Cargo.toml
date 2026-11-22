@@ -33,6 +33,12 @@ walkdir = "2"
 globset = "0.4"
 rand = "0.8"
 arboard = { version = "3", default-features = false, features = ["wayland-data-control"] }
+# Bringing the window to the front on Wayland (xdg-activation, see activate.rs).
+# All already in the dependency tree through winit.
+raw-window-handle = "0.6"
+wayland-backend = { version = "0.3", features = ["client_system"] }
+wayland-client = "0.31"
+wayland-protocols = { version = "0.32", features = ["client", "staging"] }
 ksni = { version = "0.3", default-features = false, features = ["async-io", "blocking"] }
 
 [profile.release]

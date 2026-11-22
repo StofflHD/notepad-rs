@@ -222,7 +222,9 @@ pub struct App {
     pub dlg_tx: Sender<DialogResult>,
     pub dlg_rx: Receiver<DialogResult>,
     pub dialog_busy: bool,
-    pub ipc_rx: Option<Receiver<Vec<PathBuf>>>,
+    pub ipc_rx: Option<Receiver<ipc::Request>>,
+    /// Activation token from the last hand-over, used in `update` where the window handle is known.
+    pub activation_token: Option<String>,
     pub owns_socket: bool,
 
     pub title: String,
@@ -319,6 +321,7 @@ impl App {
             dlg_rx,
             dialog_busy: false,
             ipc_rx: None,
+            activation_token: None,
             owns_socket: false,
             title: String::new(),
             last_disk_check: Instant::now(),
@@ -1412,10 +1415,13 @@ impl App {
     pub(crate) fn frame(&mut self, ctx: &egui::Context) {
         self.handle_dialog_results(ctx);
         if let Some(rx) = &self.ipc_rx {
-            let batches: Vec<Vec<PathBuf>> = rx.try_iter().collect();
-            for files in batches {
-                for f in files {
-                    self.open_path(&f);
+            let batches: Vec<ipc::Request> = rx.try_iter().collect();
+            for req in batches {
+                for f in &req.files {
+                    self.open_path(f);
+                }
+                if req.token.is_some() {
+                    self.activation_token = req.token;
                 }
             }
         }
@@ -1679,8 +1685,12 @@ impl App {
 }
 
 impl eframe::App for App {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         self.frame(ctx);
+        // ViewportCommand::Focus does nothing on Wayland: activate with the launcher's token.
+        if let Some(token) = self.activation_token.take() {
+            crate::activate::wayland(frame, &token);
+        }
     }
 }
 

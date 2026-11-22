@@ -1,3 +1,4 @@
+mod activate;
 mod api;
 mod app;
 mod assoc;
